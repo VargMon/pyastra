@@ -70,23 +70,33 @@ def main():
     proclist=''
     diry=sys.argv[1]
 
-    for proc_name in sys.argv[2:]:
-        in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name)
-        in2_name=os.path.join(diry, 'lkr', '%s.lkr' % proc_name)
-        out_name='%s.py' % proc_name
-        
-        out=open(out_name, 'wb')
-        
-        inp=open(in_name)
-        inc2py(inp, out, proc_name)
-        inp.close()
-        
-        inp=open(in2_name)
-        lkr2py(inp, out, proc_name)
-        inp.close()
-        
-        out.close()
-        proclist += "'%s', " % proc_name
+    for proc_name_ in sys.argv[2:]:
+        if proc_name_[-1]=='x':
+            names=[]
+            for i in os.listdir(os.path.join(diry, 'lkr')):
+                ii=os.path.splitext(i)[0]
+                if ii[:-1]==proc_name_[:-1]:
+                    names.append(ii)
+        else:
+            names=[proc_name_,]
+            
+        for proc_name in names:
+            in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name_)
+            in2_name=os.path.join(diry, 'lkr', '%s.lkr' % proc_name)
+            out_name='%s.py' % proc_name
+            
+            out=open(out_name, 'wb')
+            
+            inp=open(in_name)
+            inc2py(inp, out, proc_name)
+            inp.close()
+            
+            inp=open(in2_name)
+            lkr2py(inp, out, proc_name)
+            inp.close()
+            
+            out.close()
+            proclist += "'%s', " % proc_name
         
     print "Added processors:\n%s" % proclist[:-2]
 
@@ -138,7 +148,7 @@ def inc2py(inp, out, proc_name):
     b0=map(lambda it: it[0], b)
     for i in ('RP0', 'RP1', 'STATUS', 'Z', 'C'):
         if i not in b0:
-            print 'FIXME: %s doesn\'t have register or bit %s' % ( proc_name, i)
+            print 'WARNING: %s doesn\'t have register or bit %s' % ( proc_name, i)
         
     for i in xrange(len(b)/3):
         if i:
@@ -181,10 +191,11 @@ def lkr2py(inp, out, proc_name):
                     if buf[4]!='PROTECTED':
                         banks.append((buf[2][6:], buf[3][4:]))
                 elif buf[0]=='SHAREBANK':
-                    grp=buf[1][5:]
-                    if grp not in shareb:
-                        shareb[grp]=[]
-                    shareb[grp].append((buf[2][6:], buf[3][4:]))
+                    if buf[4]!='PROTECTED':
+                        grp=buf[1][5:]
+                        if grp not in shareb:
+                            shareb[grp]=[]
+                        shareb[grp].append((buf[2][6:], buf[3][4:]))
                 elif buf[0] not in ('LIBPATH', 'SECTION'):
                     print 'WARNING: unsupported keyword: %s' % buf[0]
             
@@ -210,8 +221,9 @@ def lkr2py(inp, out, proc_name):
             for k in banks:
                 if j[0]==k[0] and j[1]==k[1]:
                     new=0
-                elif k[0] <= j[0] <= k[1] or k[0] <= j[1] <= k[1]:
+                elif eval(k[0]) <= eval(j[0]) <= eval(k[1]) or eval(k[0]) <= eval(j[1]) <= eval(k[1]):
                     print "FIXME: proc %s: some of shared banks are subsequences of banks or vice versa" % proc_name
+                    break
         if new:
             banks.append(shareb[i][0])
 

@@ -130,7 +130,7 @@ http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
             sys.exit(4)
     elif o=='-p':
         if a=='list':
-            print 'Supported %s-port specific processors: %s' % (ports[0], str(procs))
+            print '%i supported %s-port specific processors:\n%s' % (len(procs), ports[0], str(procs))
             sys.exit(0)
         elif a in procs:
             PROC=a
