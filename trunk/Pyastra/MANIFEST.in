@@ -25,5 +25,5 @@
 ############################################################################
 
 include pyastra MANIFEST.in LICENSE README.html pyastra_48x48.xpm
-recursive-include doc *.html
+recursive-include doc *.html *.py
 recursive-include scripts *.py
