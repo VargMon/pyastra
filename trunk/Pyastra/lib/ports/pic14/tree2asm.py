@@ -147,7 +147,10 @@ class tree2asm:
         
         self._convert(node)
         
-        body_buf = ['\n\terrorlevel\t-302\n']
+        body_buf = ["""
+\terrorlevel\t-302
+\terrorlevel\t-306
+"""]
 
         if self.vectors:
             body_buf += ['\n\torg\t%s\n' % hex(self.vectors[0])]
@@ -847,11 +850,10 @@ class tree2asm:
             lbl_end=self.getLabel()
             for n in xrange(len(node.nodes)):
                 self._convert(node.nodes[n])
+                self.del_last=0
                 if n+1 != len(node.nodes):
-                    self.del_last=0
                     self.app('btfss', 'STATUS', 'Z')
                     self.app('goto', lbl_end)
-            self.del_last=0
             self.app(lbl_end, verbatim=1)
         elif isinstance(node, Pass):
             #self.app('nop')
@@ -1029,7 +1031,6 @@ class tree2asm:
             return ''
         
         ret=''
-        
         if self.curr_bank != -1:
             for block in self.shareb:
                 addr_in_block = 0
@@ -1135,14 +1136,14 @@ class tree2asm:
 
 ##        if self.ve:
 ##            print self.curr_bank, self.last_bank, self.prelast_bank
-        #if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
             #has_dollar=0
             #for ch in op1:
             #    if ch=='$':
             #        has_dollar=1
             #        break
             #if not has_dollar:
-        #        bodys += '\tpagesel %s\n' % op1
+                bodys += '\tpagesel %s\n' % op1
             
         if op2 != None:
             bodys += '\t%s\t%s,\t%s' % (cmd, op1, op2)
@@ -1152,9 +1153,9 @@ class tree2asm:
             bodys += '\t%s' % (cmd,)
         self.instr += 1
         
-        #if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
-        #    bodys += '\n\tpagesel $+1'
-        #    self.instr += 2
+        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+            bodys += '\n\tpagesel $+1'
+            self.instr += 2
 
         self.body += [bodys+comment+'\n']
 
