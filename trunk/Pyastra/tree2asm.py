@@ -192,12 +192,15 @@ class tree2asm:
         elif isinstance(node, Break):
             self.app('goto', self.lbl_stack[-1][1])
         elif isinstance(node, CallFunc):
+            if isinstance(node.node, Getattr):
+                print node
+                
             if node.star_args or node.dstar_args:
                 self.say('*-args and **-args are not supported while')
                 
             if not isinstance(node.node, Name):
                 self.say('only functions are callable while')
-                
+
             if node.node.name == 'asm':
                 if not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
                     self.say('asm function has the following syntax: asm(code, instr_count [, (local_var1, local_var2, ...)])', exit_status=2)
@@ -214,7 +217,7 @@ class tree2asm:
                 self.instr += node.args[1].value
                 self.asm=1
             elif node.node.name == 'halt':
-                if len(node.args) != 1:
+                if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
                 self.app('goto', '$')
             else:
