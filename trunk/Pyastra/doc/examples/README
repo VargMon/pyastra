@@ -1,0 +1,11 @@
+This directory contains examples for Pyastra:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Small programs that use external modules:
+* example1.py   Gets data from ADC and writes it to serial port.
+* example2.py   Writes 255 bytes from serial port to eeprom.
+* led_blink.py  Makes led blink.
+
+Modules:
+* eeprom.py     Internal EEPROM driver.
+* pic_adc.py    PIC's internal ADC driver.
+* serial.py     Serial driver using internal USART.
