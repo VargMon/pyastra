@@ -65,8 +65,11 @@ def PIC_ADC_on():
 # At this moment get() method updates resl and resh variables.
 #
 def PIC_ADC_get():
+    ADCON0[GO]=1
+    
     while ADCON0[GO]:
         pass
     
     PIC_ADC_resl=ADRESL
     PIC_ADC_resh=ADRESH
+
