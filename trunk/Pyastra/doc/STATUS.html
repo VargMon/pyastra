@@ -1,0 +1,506 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=windows-1251"
+ http-equiv="content-type">
+  <title>Pyastra STATUS</title>
+  <meta content="estyler@users.sourceforge.net" name="author">
+</head>
+<body>
+All variables have unsigned byte type. There's no dynamical typing yet.
+There are no namespaces at this moment (all variables are global,
+including function arguments).<br>
+<br>
+Status of nodes currently supported by Pyastra:<br>
+<br>
+<table border="1"
+ style="border-collapse: collapse; text-align: left; margin-left: auto; margin-right: auto;">
+  <tbody valign="baseline">
+    <tr>
+      <th>Statement<br>
+      </th>
+      <th>Maturity</th>
+      <th>Tested<br>
+      </th>
+      <th>Planned/released in version<br>
+      </th>
+    </tr>
+    <tr>
+      <td>Add</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1<br>
+      </td>
+    </tr>
+    <tr>
+      <td>And</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>AssAttr</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>AssList</td>
+      <td style="color: rgb(153, 0, 0);">none<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>AssName</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>AssTuple</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Assert</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Assign</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>AugAssign</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Backquote</td>
+      <td style="color: rgb(153, 0, 0);">none<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Bitand</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Bitor</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Bitxor</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Break</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>CallFunc</td>
+      <td style="color: rgb(153, 153, 0);"> partial</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Class</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Compare</td>
+      <td style="color: rgb(153, 153, 0);">partial<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.0.1) </td>
+    </tr>
+    <tr>
+      <td>Const</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Continue</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Dict</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Discard</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Div</td>
+      <td style="color: rgb(153, 153, 0);"> partial</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Ellipsis</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Exec</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>For</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>From</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Function</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Getattr</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Global</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>If</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Import</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0<br>
+      </td>
+    </tr>
+    <tr>
+      <td>Invert</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Keyword</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Lambda</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0<br>
+      </td>
+    </tr>
+    <tr>
+      <td>LeftShift</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>List</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>ListComp</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>ListCompFor</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>ListCompIf</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Mod</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Module</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Mul</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Name</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Not</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Or</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Pass</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Power</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Print</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Printnl</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Raise</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Return</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>RightShift</td>
+      <td style="color: rgb(153, 153, 0);">partial </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 (done in 0.1.0) </td>
+    </tr>
+    <tr>
+      <td>Slice</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Sliceobj</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>Stmt</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Sub</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Subscript</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>TryExcept</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>TryFinally</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>Tuple</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.1.0 </td>
+    </tr>
+    <tr>
+      <td>UnaryAdd</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>UnarySub</td>
+      <td style="color: rgb(153, 0, 0);">none </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td>While</td>
+      <td style="color: rgb(0, 153, 0);">done </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">0.0.1 </td>
+    </tr>
+    <tr>
+      <td>Yield</td>
+      <td style="color: rgb(153, 0, 0);">none<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Of course, "done" maturity doesn't mean that it's final. There must be
+added some optimizations. Also many things are to be changed to fix the
+limitations listed in the beginning of the document.<br>
+<br>
+Tested means that the statement generates correct code. Some
+combinations of tested statements may generate incorrect code anyway
+(than it's called a bug).<br>
+</body>
+</html>
