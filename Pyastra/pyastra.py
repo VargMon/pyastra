@@ -39,6 +39,7 @@
 
 import sys, os.path, compiler
 from tree2asm import tree2asm
+#from getopt import getopt
 
 NFO='pyastra 0.0.1'
 PROC='16f877'
@@ -130,8 +131,8 @@ l=p.ram_usage
 if ICD:
     l += 1
 
-print "Peak RAM usage: %g byte(s) (%.1g%%)" % (l, l*100/368.)
-print "Program memory usage: %g word(s) (%.1g%%)" % (p.instr, p.instr*100/8192.)
+print "Peak RAM usage: %g byte(s) (%.1f%%)" % (l, l*100/368.)
+print "Program memory usage: %g word(s) (%.1f%%)" % (p.instr, p.instr*100/8192.)
 if p.asm:
     print "NOTE: statistics includes data specified in asm function!"
 if ICD:
