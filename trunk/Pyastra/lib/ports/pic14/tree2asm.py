@@ -726,15 +726,15 @@ main
 
     def bank_by_name(self, name):
         if name in self.dikt:
-            self.bank_sel(self.dikt[name] >> 7 << 7)
+            self.bank_sel(self.dikt[name] >> 7)
         elif name in self.hdikt:
-            self.bank_sel(self.hdikt[name] >> 7 << 7)
+            self.bank_sel(self.hdikt[name] >> 7)
             
     def bank_sel(self, bank):
         if self.maxram < 0x80 or (not 'RP0' in self.hdikt):
             return
         
-        if bank and 1:
+        if bank & 1:
             self.body += '\tbsf\tSTATUS,\tRP0\n'
         else:
             self.body += '\tbcf\tSTATUS,\tRP0\n'
@@ -742,7 +742,7 @@ main
         if self.maxram < 0x100 or (not 'RP1' in self.hdikt):
             return
         
-        if bank and 2:
+        if bank & 2:
             self.body += '\tbsf\tSTATUS,\tRP1\n'
         else:
             self.body += '\tbcf\tSTATUS,\tRP1\n'
