@@ -50,9 +50,10 @@ class tree2asm:
     ram_usage=0
     infunc=0
     
-    def __init__(self, ICD=0, op_speed=0):
+    def __init__(self, ICD=0, op_speed=0, PROC):
         self.ICD=ICD
         self.op_speed=op_speed
+        self.PROC=PROC
         
         if ICD:
             self.cvar=[(0x21, -1)]
@@ -504,6 +505,7 @@ class tree2asm:
             self.convert(Discard(CallFunc(Name('mod'), [node.left, node.right], None, None)))
         elif isinstance(node, Module):
             self.convert(From('p16f877', [('*', None)]))
+            self.asm=0
             self.convert(node.node)
         elif isinstance(node, Mul):
             self.convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))

@@ -37,25 +37,71 @@
 # halt - halt the system
 #
 
-import sys, os.path, compiler
+import sys, os.path, compiler, getopt
 from pyastra.tree2asm import tree2asm
 from pyastra.tree2tree import tree2tree
 #from getopt import getopt
 
 NFO='pyastra 0.0.1'
 PROC='16f877'
-ICD = 1
+procs=('16f877',)
+ports=('pic14',)
+ICD = 0
 #
 # By default optimises for size,
 # but if op_speed=1 than optimises for speed.
 # 
 op_speed = 0
 
+def usage():
+    print """%s usage:
+pyastra [options] infile [outfile]
+
+Options:
+  -m              Set the port to use (default: -m%s)
+  -p              Select port specific processor (default: -m%s -p%s)
+      --icd       Enable ICD support (disabled by default)
+      --op-speed  Optimize for speed (for code size by default)
+  -h, --help      Show this usage message and exit
+
+Supported ports: %s
+          processors: %s
+""" % (NFO, ports[0], ports[0], procs[0], str(ports)[1:-1], str(procs)[1:-1])
+    sys.exit(4)
+
 print
 
-if len(sys.argv) < 2:
-    print '%s usage:\npyastra.py infile [outfile]' % (NFO,)
-    sys.exit(4)
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'hm:p:', ['help', 'icd', 'op-speed',])
+except getopt.GetoptError:
+    usage()
+
+for o, a in opts:
+    if o in ('-h', '--help'):
+        usage()
+        sys.exit()
+    if o=='--op-speed':
+        op_speed = 1
+    elif o=='--idc':
+        ICD = 1
+    elif o=='-m':
+        if a!='pic14':
+            print """Curent version supports pic14 (Microchip PIC16*) only.
+Please submit feature request if that port is not already in TODO:
+http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
+            sys.exit(4)
+    elif o=='-p':
+        if a in procs:
+            PROC=a
+        else:
+            print """%s processor is not supported by the current version.
+(Have you selected a correct port?)
+Please submit feature request if that processor is not already in TODO:
+http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
+            sys.exit(4)
+
+if not args:
+    usage()
 
 root=compiler.parseFile(sys.argv[1])
 
@@ -65,7 +111,7 @@ else:
     out_name=sys.argv[2]
 
 op=tree2tree(root)
-p=tree2asm(ICD, op_speed)
+p=tree2asm(ICD, op_speed, PROC)
 p.convert(op.root)
 
 pstr = 'Compiler has found'
