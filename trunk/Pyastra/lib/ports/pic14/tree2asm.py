@@ -514,6 +514,7 @@ main
 #       elif isinstance(node, Global):
         elif isinstance(node, If):
             self.app(verbatim=1)
+            exit_lbl=self.getLabel()
             
             for n in node.tests:
                 self._convert(n[0])
@@ -521,8 +522,10 @@ main
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', label)
                 self._convert(n[1])
+                self.app('goto', exit_lbl)
                 self.app('%s' % label, verbatim=1)
             self._convert(node.else_)
+            self.app('%s' % exit_lbl, verbatim=1)
 #       elif isinstance(node, Import):
         elif isinstance(node, Invert):
             self._convert(node.expr)
