@@ -39,6 +39,7 @@
 
 import sys, os.path, compiler
 from tree2asm import tree2asm
+from tree2tree import tree2tree
 #from getopt import getopt
 
 NFO='pyastra 0.0.1'
@@ -63,8 +64,9 @@ if len(sys.argv) == 2:
 else:
     out_name=sys.argv[2]
 
+op=tree2tree(root)
 p=tree2asm(ICD, op_speed)
-p.convert(root)
+p.convert(op.root)
 
 pstr = 'Compiler has found'
 ptest = 0
