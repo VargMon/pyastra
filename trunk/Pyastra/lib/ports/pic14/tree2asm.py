@@ -29,7 +29,6 @@ import types, compiler, sys, os.path, pyastra.ports.pic14
 from compiler.ast import *
 
 class tree2asm:
-    head=''
     body=''
     stack=-1
     dikt={}
@@ -39,49 +38,97 @@ class tree2asm:
     label=-1
     funcs={}
     asm=0
-    errors=0
-    warnings=0
-    messages=0
     error='Error'
     warning='Warning'
     message='Message'
     ram_usage=0
     infunc=0
     
-    def __init__(self, ICD, op_speed, PROC):
+    def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
         self.op_speed=op_speed
         self.PROC=PROC
         self.procmod = __import__('pyastra.ports.pic14.procs.%s' %PROC, globals(), locals(), '*')
         self.hdikt = self.procmod.hdikt
+        self.pages = self.procmod.pages
+        self.banks = self.procmod.banks
+        self.shareb = self.procmod.shareb
+        self.say = say
         
-        if ICD:
-            self.cvar=[(0x21, -1)]
-            self.instr=3
-        else:
-            self.cvar=[(0x20, -1)]
-            self.instr=2
-            
-        self.convert(From('builtins', [('*', None)]))
-        self.asm=0
+        self.max_ram=0
+        for i in self.banks:
+            self.max_ram += i[1] - i[0] + 1
+        
+        self.max_instr=0
+        for i in self.pages:
+            self.max_instr += i[1] - i[0] + 1
     
     def convert(self, node):
+        self.head="""
+\tprocessor\t%s
+\t#include\tp%s.inc
+""" % (self.PROC, self.PROC)
+        self.body='\n\torg\t0x0\n'
+        
+        if self.ICD:
+            self.body+='\tnop\n'
+        
+        self.body+="""
+\tgoto\tmain
+
+\torg\t%s
+main
+""" % hex(self.pages[0][0])
+        
+        if self.ICD:
+            self.cvar=[0x21]
+            self.instr=3
+        else:
+            self.cvar=[0x20]
+            self.instr=2
+            
+        self._convert(From('builtins', [('*', None)]))
+        self.asm=0
+        
+        self._convert(node)
+        
+        if self.ICD:
+            self.ram_usage += 1
+
+        self.body += '\n\tgoto\t$\n'
+            
+        ftest=0
+        self.tail=fbuf=''
+        for i in self.funcs:
+            if not self.funcs[i][1]:
+                print 'Undefined function call: %s' % i
+            if self.funcs[i][3]:
+                ftest=1
+                fbuf = self.funcs[i][1]
+                self.instr += self.funcs[i][2]
+                
+        if ftest:
+            self.tail += "\n;\n; SUBROUTINES\n;\n\n%s" % fbuf
+            
+        self.tail += "\n\tend\n"
+        
+    def _convert(self, node):
         if node==None:
             return
         elif isinstance(node, list):
             for n in node:
-                self.convert(n)
+                self._convert(n)
         elif isinstance(node, Add):
-            self.convert(node.left)
+            self._convert(node.left)
             buf=self.push()
             self.app('movwf', buf)
-            self.convert(node.right)
+            self._convert(node.right)
             self.app('addwf', buf, 'w')
             self.pop()
         elif isinstance(node, And):
             end_lbl=self.getLabel()
             for n in xrange(len(node.nodes)):
-                self.convert(node.nodes[n])
+                self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
                     self.app('btfss', 'STATUS', 'Z')
                     self.app('goto', end_lbl)
@@ -149,46 +196,46 @@ class tree2asm:
                                 else:
                                     self.app(oper, name, str(i.value))
             else:
-                self.convert(node.expr)
+                self._convert(node.expr)
                 
                 for n in node.nodes:
-                    self.convert(n)
+                    self._convert(n)
         elif isinstance(node, AugAssign):
                 if not isinstance(node.node, Name):
                     self.say('assign only to a variable is not supported while.', node.lineno)
                     
                 if node.op == '+=':
-                    self.convert(node.expr)
+                    self._convert(node.expr)
                     self.app('addwf', node.node.name, 'f')
                 if node.op == '-=':
-                    self.convert(node.expr)
+                    self._convert(node.expr)
                     self.app('subwf', node.node.name, 'f')
                 elif node.op == '*=':
-                    self.convert(Mul((node.node, node.expr)))
+                    self._convert(Mul((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '/=':
-                    self.convert(Div((node.node, node.expr)))
+                    self._convert(Div((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '%=':
-                    self.convert(Mod((node.node, node.expr)))
+                    self._convert(Mod((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '**=':
-                    self.convert(Power((node.node, node.expr)))
+                    self._convert(Power((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '>>=':
-                    self.convert(RightShift((node.node, node.expr)))
+                    self._convert(RightShift((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '<<=':
-                    self.convert(LeftShift((node.node, node.expr)))
+                    self._convert(LeftShift((node.node, node.expr)))
                     self.app('movwf', node.node.name, 'f')
                 elif node.op == '&=':
-                    self.convert(node.expr)
+                    self._convert(node.expr)
                     self.app('andwf', node.node.name, 'f')
                 elif node.op == '^=':
-                    self.convert(node.expr)
+                    self._convert(node.expr)
                     self.app('xorwf', node.node.name, 'f')
                 elif node.op == '|=':
-                    self.convert(node.expr)
+                    self._convert(node.expr)
                     self.app('iorwf', node.node.name, 'f')
                 else:
                     self.say('augmented assign %s is not supported while.' % node.op, node.lineno)
@@ -196,32 +243,32 @@ class tree2asm:
 #      elif isinstance(node, Backquote):
         elif isinstance(node, Bitand):
             buf=self.push()
-            self.convert(node.nodes[0])
+            self._convert(node.nodes[0])
             self.app('movwf', buf)
             for n in node.nodes[1:-1]:
-                self.convert(n)
+                self._convert(n)
                 self.app('andwf', buf, 'f')
-            self.convert(node.nodes[-1])
+            self._convert(node.nodes[-1])
             self.app('andwf', buf, 'w')
             self.pop()
         elif isinstance(node, Bitor):
             buf=self.push()
-            self.convert(node.nodes[0])
+            self._convert(node.nodes[0])
             self.app('movwf', buf)
             for n in node.nodes[1:-1]:
-                self.convert(n)
+                self._convert(n)
                 self.app('iorwf', buf, 'f')
-            self.convert(node.nodes[-1])
+            self._convert(node.nodes[-1])
             self.app('iorwf', buf, 'w')
             self.pop()
         elif isinstance(node, Bitxor):
             buf=self.push()
-            self.convert(node.nodes[0])
+            self._convert(node.nodes[0])
             self.app('movwf', buf)
             for n in node.nodes[1:-1]:
-                self.convert(n)
+                self._convert(n)
                 self.app('xorwf', buf, 'f')
-            self.convert(node.nodes[-1])
+            self._convert(node.nodes[-1])
             self.app('xorwf', buf, 'w')
             self.pop()
         elif isinstance(node, Break):
@@ -265,7 +312,7 @@ class tree2asm:
                         elif i != '0':
                             self.say('fbin(\'0101 0101\') function takes only one argument: binary number', exit_status=2)
                     
-                self.convert(Const(val))
+                self._convert(Const(val))
             else:
                 if node.node.name not in self.funcs:
                     self.say('function %s is not defined before call (this is not supported while)' % node.node.name, node.lineno, exit_status=1)
@@ -279,7 +326,7 @@ class tree2asm:
                              
                 for i in xrange(len(node.args)):
                     (aname, val)=(self.funcs[node.node.name][0][i], node.args[i])
-                    self.convert(val)
+                    self._convert(val)
                     self.app('movwf', '_'+aname)
                 self.app('call', 'func_%s' % node.node.name)
                     
@@ -291,9 +338,9 @@ class tree2asm:
             nodes=node.expr.ops
             if nodes[0][0]=='<':
                 lbl_false=self.getLabel()
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be < 0 (Z=0 and C=0)
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', lbl_false) # node.expr = nodes[0][1]
@@ -303,9 +350,9 @@ class tree2asm:
                 self.app('bsf', 'STATUS', 'Z') # false
             elif nodes[0][0]=='>':
                 lbl_false=self.getLabel()
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be > 0 (Z=0 and C=1)
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', lbl_false) # node.expr = nodes[0][1]
@@ -314,16 +361,16 @@ class tree2asm:
                 self.app(lbl_false, verbatim=1)
                 self.app('bsf', 'STATUS', 'Z') # false
             elif nodes[0][0]=='==':
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w')
                 self.app('comf', buf, 'w')
             elif nodes[0][0]=='<=':
                 lbl_true=self.getLabel()
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be <= 0 (Z=1 or C=0)
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', lbl_true) # node.expr = nodes[0][1]
@@ -333,9 +380,9 @@ class tree2asm:
                 self.app('bcf', 'STATUS', 'Z') # true
             elif nodes[0][0]=='>=':
                 lbl_true=self.getLabel()
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be >= 0 (Z=1 or C=1)
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', lbl_true) # node.expr = nodes[0][1]
@@ -344,9 +391,9 @@ class tree2asm:
                 self.app(lbl_true, verbatim=1)
                 self.app('bcf', 'STATUS', 'Z') # true
             elif nodes[0][0]=='!=':
-                self.convert(node.expr)
+                self._convert(node.expr)
                 self.app('movwf', buf)
-                self.convert(nodes[0][1])
+                self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w')
 ##            elif nodes[0][0]=='is':
 ##            elif nodes[0][0]=='is not':
@@ -365,9 +412,9 @@ class tree2asm:
             self.app('goto', self.lbl_stack[-1][0])
 ##      elif isinstance(node, Dict):
         elif isinstance(node, Discard):
-            self.convert(node.expr)
+            self._convert(node.expr)
         elif isinstance(node, Div):
-            self.convert(Discard(CallFunc(Name('div'), [node.left, node.right], None, None)))
+            self._convert(Discard(CallFunc(Name('div'), [node.left, node.right], None, None)))
 ##      elif isinstance(node, Ellipsis):
 ##      elif isinstance(node, Exec):
         elif isinstance(node, For):
@@ -382,9 +429,9 @@ class tree2asm:
             cntr = node.assign.name
             if cntr not in self.hdikt:
                 cntr = '_'+cntr
-            self.convert(Assign([node.assign], node.list.args[0]))
+            self._convert(Assign([node.assign], node.list.args[0]))
             limit = self.push()
-            self.convert(node.list.args[1])
+            self._convert(node.list.args[1])
             self.app('movwf', limit)
             
             lbl_beg=self.getLabel()
@@ -404,7 +451,7 @@ class tree2asm:
             self.app('btfsc', 'STATUS', 'C') #skip if cntr - limit <= 0
             self.app('goto', lbl_else)
             
-            self.convert(node.body)
+            self._convert(node.body)
             
             self.app('\n%s' % lbl_cont, verbatim=1)
             
@@ -413,7 +460,7 @@ class tree2asm:
             
             if node.else_ != None:
                 self.app('\n%s' % lbl_else, verbatim=1)
-                self.convert(node.else_)
+                self._convert(node.else_)
             
             self.app('\n%s' % lbl_end, verbatim=1)
             self.pop()
@@ -426,7 +473,7 @@ class tree2asm:
             if not os.path.exists(name):
                 name=os.path.join(pyastra.ports.pic14.__path__[0], name)
             root=compiler.parseFile(name)
-            self.convert(root)
+            self._convert(root)
         elif isinstance(node, Function):
             used=0
             if (node.name in self.funcs):
@@ -452,7 +499,7 @@ class tree2asm:
             self.body='\n;\n; * Function %s *\n;\n' % node.name
             self.instr=0
             self.app('func_%s\n' % node.name, verbatim=1)
-            self.convert(node.code)
+            self._convert(node.code)
             
             if not isinstance(node.code.nodes[-1], Return):
                 self.app('return')
@@ -469,16 +516,16 @@ class tree2asm:
             self.app(verbatim=1)
             
             for n in node.tests:
-                self.convert(n[0])
+                self._convert(n[0])
                 label=self.getLabel()
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', label)
-                self.convert(n[1])
+                self._convert(n[1])
                 self.app('%s' % label, verbatim=1)
-            self.convert(node.else_)
+            self._convert(node.else_)
 #       elif isinstance(node, Import):
         elif isinstance(node, Invert):
-            self.convert(node.expr)
+            self._convert(node.expr)
             buf=self.push()
             self.app('movwf', buf)
             self.app('comf', buf, 'w')
@@ -488,25 +535,25 @@ class tree2asm:
         elif isinstance(node, LeftShift):
             if isinstance(node.right, Const) and self.op_speed:
                 buf=self.push()
-                self.convert(node.left)
+                self._convert(node.left)
                 self.app('movwf', buf)
                 for i in xrange(node.right.value[:-1]):
                     self.app('rlf', buf, 'f')
                 self.app('rlf', buf, 'w')
                 self.pop()
             else:
-                self.convert(Discard(CallFunc(Name('lshift'), [node.left, node.right], None, None)))
+                self._convert(Discard(CallFunc(Name('lshift'), [node.left, node.right], None, None)))
                 
 #       elif isinstance(node, List):
 #       elif isinstance(node, ListComp):
 #       elif isinstance(node, ListCompFor):
 #       elif isinstance(node, ListCompIf):
         elif isinstance(node, Mod):
-            self.convert(Discard(CallFunc(Name('mod'), [node.left, node.right], None, None)))
+            self._convert(Discard(CallFunc(Name('mod'), [node.left, node.right], None, None)))
         elif isinstance(node, Module):
-            self.convert(node.node)
+            self._convert(node.node)
         elif isinstance(node, Mul):
-            self.convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
+            self._convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
         elif isinstance(node, Name):
             if '_'+node.name in self.dikt:
                 self.app('movf', '_'+node.name, 'w')
@@ -517,7 +564,7 @@ class tree2asm:
         elif isinstance(node, Not):
             lbl1=self.getLabel()
             lbl_end=self.getLabel()
-            self.convert(node.expr)
+            self._convert(node.expr)
             self.app('btfsc', 'STATUS', 'Z')
             self.app('goto', lbl1)
             self.app('movlw', '0')
@@ -528,7 +575,7 @@ class tree2asm:
         elif isinstance(node, Or):
             lbl_end=self.getLabel()
             for n in xrange(len(node.nodes)):
-                self.convert(node.nodes[n])
+                self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
                     self.app('btfsc', 'STATUS', 'Z')
                     self.app('goto', lbl_end)
@@ -537,18 +584,18 @@ class tree2asm:
             #self.app('nop')
             pass
         elif isinstance(node, Power):
-            self.convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
+            self._convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
 #       elif isinstance(node, Print):
 #       elif isinstance(node, Printnl):
 #       elif isinstance(node, Raise):
         elif isinstance(node, Return):
             if not (isinstance(node.value, Const) and node.value.value==None):
-                self.convert(node.value)
+                self._convert(node.value)
             self.app('return')
         elif isinstance(node, RightShift):
             if isinstance(node.right, Const) and self.formatConst(node.right.value)!=-1 and (node.right.value < 8 or self.op_speed):
                 buf=self.push()
-                self.convert(node.left)
+                self._convert(node.left)
                 self.app('movwf', buf)
                 for i in xrange(node.right.value):
                     self.app('rrf', buf, 'w')
@@ -556,16 +603,16 @@ class tree2asm:
                 self.app('rrf', buf, 'f')
                 self.pop()
             else:
-                self.convert(Discard(CallFunc(Name('rshift'), [node.left, node.right], None, None)))
+                self._convert(Discard(CallFunc(Name('rshift'), [node.left, node.right], None, None)))
 #       elif isinstance(node, Slice):
 #       elif isinstance(node, Sliceobj):
         elif isinstance(node, Stmt):
-            self.convert(node.nodes)
+            self._convert(node.nodes)
         elif isinstance(node, Sub):
-            self.convert(node.left)
+            self._convert(node.left)
             buf=self.push()
             self.app('movwf', buf)
-            self.convert(node.right)
+            self._convert(node.right)
             self.app('subwf', buf, 'w')
             self.pop()
         elif isinstance(node, Subscript):
@@ -592,7 +639,7 @@ class tree2asm:
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
         elif isinstance(node, UnaryAdd):
-            self.convert(node.expr)
+            self._convert(node.expr)
 #       elif isinstance(node, UnarySub):
         elif isinstance(node, While):
             lbl_beg=self.getLabel()
@@ -603,14 +650,14 @@ class tree2asm:
                 lbl_end=lbl_else
             self.lbl_stack.append((lbl_beg, lbl_end))
             self.app('\n%s' % lbl_beg, verbatim=1)
-            self.convert(node.test)
+            self._convert(node.test)
             self.app('btfsc', 'STATUS', 'Z')
             self.app('goto', '%s\n' % lbl_else)
-            self.convert(node.body)
+            self._convert(node.body)
             self.app('goto', lbl_beg)
             if node.else_ != None:
                 self.app('\n%s' % lbl_else, verbatim=1)
-                self.convert(node.else_)
+                self._convert(node.else_)
             self.app('\n%s' % lbl_end, verbatim=1)
             del self.lbl_stack[-1]
 #       elif isinstance(node, Yield):
@@ -633,35 +680,32 @@ class tree2asm:
         return name
         
     def pop(self):
-        pass # this feature is temporary due to bugs it causes in some cases
+        pass # this feature is temporary off due to bugs it causes in some cases
         #self.stack -= 1
         #self.free('stack%g' % self.stack)
         
     def getLabel(self):
         self.label += 1
         return 'label%i' % self.label
-            
+    
     def malloc(self, name, care=0):
         if name not in self.dikt:
             self.dikt[name]=self.cvar[0]
             if len(self.dikt) > self.ram_usage:
                 self.ram_usage=len(self.dikt)
                 
-            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(self.cvar[0][0]), self.cvar[0][1])
+            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(self.cvar[0] & 0x7f), self.cvar[0] >> 7 << 7)
 
             if len(self.cvar) > 1:
                 del self.cvar[0]
             else:
-                self.cvar[0] = (self.cvar[0][0]+1, self.cvar[0][1])
-                if self.cvar[0][0] > 0x6f and self.cvar[0][1]==-1:
-                    self.cvar[0]=(self.cvar[0], 0)
-                elif self.cvar[0][0] > 0x7f and self.cvar[0][1]==0:
-                    self.cvar[0]=(1,0x20)
-                elif self.cvar[0][0] > 0x6f and self.cvar[0][1]==1:
-                    self.cvar[0]=(2,0x10)
-                elif self.cvar[0][0] > 0x6f and self.cvar[0][1]==2:
-                    self.cvar[0]=(3,0x10)
-                elif self.cvar[0][0] > 0x6f and self.cvar[0][1] == 3:
+                self.cvar[0] += 1
+                for i in self.banks:
+                    if i[0] <= self.cvar <= i[1]:
+                        break
+                    elif i[0] > self.cvar:
+                        self.cvar=i[0]
+                if self.cvar[0] > self.banks[-1][1]:
                     self.say("program does not fit RAM.", exit_status=3)
         elif care:
             self.say("name %s is defined twice!" % name, level=self.warning)
@@ -671,18 +715,15 @@ class tree2asm:
             self.cvar.insert(0, self.dikt[name])
             del self.dikt[name]
         elif care:
-            self.say("undefined variable %s can't be deleted before assign!" % name, level=self.warning)
+            self.say("variable %s can't be deleted before assign!" % name, level=self.warning)
 
     def bank_by_name(self, name):
         if name in self.dikt:
-            self.bank_sel(self.dikt[name][1])
+            self.bank_sel(self.dikt[name] >> 7 << 7)
         elif name in self.hdikt:
-            self.bank_sel(self.hdikt[name][1])
+            self.bank_sel(self.hdikt[name] >> 7 << 7)
             
     def bank_sel(self, bank):
-        if bank==-1:
-            return
-            
         if bank and 1:
             self.body += '\tbsf\tSTATUS,\tRP0\n'
         else:
@@ -695,22 +736,6 @@ class tree2asm:
             
         self.instr += 2
         
-    def say(self, message, line=None, level=error, exit_status=0):
-        if line is not None:
-            print '%s: %g: %s' % (level, line, message)
-        else:
-            print '%s: %s' % (level, message)
-
-        if exit_status:
-            sys.exit(exit_status)
-            
-        if level==self.error:
-            self.errors += 1
-        elif level==self.warning:
-            self.warnings += 1
-        else:
-            self.messages += 1
-            
     def app(self, cmd='', op1=None, op2=None, verbatim=0):
         if verbatim:
             self.body += '%s\n' % (cmd,)
@@ -726,4 +751,9 @@ class tree2asm:
         else:
             self.body += '\t%s\n' % (cmd,)
         self.instr += 1
-        
+
+        if self.instr == self.pages[0][1]:
+            self.say('Program does not fit ROM (maybe because while only first ROM page is supported).')
+            
+    def get_asm(self):
+        return self.head + self.body + self.tail
