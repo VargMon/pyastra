@@ -318,7 +318,9 @@ class tree2asm:
                                     self.say('Only constant indices are supported while.', node.lineno)
                     self.app('\n%s' % lbl_exit, verbatim=1)
                 else:
-                    self.say('Bits may be assigned to constants and bits noted by constant indexes only!', node.lineno)
+                    self._convert(If([(node.expr,
+                        Stmt([Assign(node.nodes, Const(1))]))],
+                        Stmt([Assign(node.nodes, Const(0))])))
             else:
                 self._convert(node.expr)
                 
