@@ -1,7 +1,7 @@
 ############################################################################
 # $Id$
 #
-# Description: p16f877 specific built-ins. Pyastra project.
+# Description: pic14 specific built-ins. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.

@@ -1,7 +1,7 @@
 ############################################################################
 # $Id$
 #
-# Description: Tree to assemler convertor. Pyastra project.
+# Description: pic14 tree to assemler convertor. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
@@ -25,16 +25,14 @@
 ############################################################################
 
 
-import types, compiler, sys, os.path, pyastra
+import types, compiler, sys, os.path, pyastra.ports.pic14
 from compiler.ast import *
-from pyastra.regs16f877 import *
 
 class tree2asm:
     head=''
     body=''
     stack=-1
     dikt={}
-    global hdikt
     no_bank_cmds=('addlw', 'andlw', 'call', 'goto', 'iorlw', 'movlw', 'retlw',
                   'sublw', 'xorlw')
     lbl_stack=[]
@@ -50,10 +48,12 @@ class tree2asm:
     ram_usage=0
     infunc=0
     
-    def __init__(self, ICD=0, op_speed=0, PROC):
+    def __init__(self, ICD, op_speed, PROC):
         self.ICD=ICD
         self.op_speed=op_speed
         self.PROC=PROC
+        self.procmod = __import__('pyastra.ports.pic14.procs.%s' %PROC, globals(), locals(), '*')
+        self.hdikt = self.procmod.hdikt
         
         if ICD:
             self.cvar=[(0x21, -1)]
@@ -61,6 +61,9 @@ class tree2asm:
         else:
             self.cvar=[(0x20, -1)]
             self.instr=2
+            
+        self.convert(From('builtins', [('*', None)]))
+        self.asm=0
     
     def convert(self, node):
         if node==None:
@@ -87,7 +90,7 @@ class tree2asm:
 #       elif isinstance(node, AssList):
         elif isinstance(node, AssName):
             if node.flags=='OP_ASSIGN':
-                if node.name in hdikt:
+                if node.name in self.hdikt:
                     name=node.name
                 else:
                     name='_'+node.name
@@ -113,7 +116,7 @@ class tree2asm:
                     
             if all_names and isinstance(node.expr, Const) and node.expr.value == 0:
                 for n in node.nodes:
-                    if n.name in hdikt:
+                    if n.name in self.hdikt:
                         name=n.name
                     else:
                         name='_'+n.name
@@ -135,7 +138,7 @@ class tree2asm:
                             self.say('Bit assign may be applied to bytes only.', node.lineno)
                         else:
                             name=n.expr.name
-                            if name in hdikt:
+                            if name in self.hdikt:
                                 pass
                             else:
                                 name='_'+name
@@ -377,7 +380,7 @@ class tree2asm:
                 self.say('only "for <var> in xrange(<from>, <to>)" for statement is supported while', node.lineno)
                 return
             cntr = node.assign.name
-            if cntr not in hdikt:
+            if cntr not in self.hdikt:
                 cntr = '_'+cntr
             self.convert(Assign([node.assign], node.list.args[0]))
             limit = self.push()
@@ -421,12 +424,9 @@ class tree2asm:
                 return
             name='%s.py' % node.modname
             if not os.path.exists(name):
-                name=os.path.join(pyastra.__path__[0], name)
+                name=os.path.join(pyastra.ports.pic14.__path__[0], name)
             root=compiler.parseFile(name)
-            if node.modname=='p16f877':
-                self.convert(root.node)
-            else:
-                self.convert(root)
+            self.convert(root)
         elif isinstance(node, Function):
             used=0
             if (node.name in self.funcs):
@@ -504,15 +504,13 @@ class tree2asm:
         elif isinstance(node, Mod):
             self.convert(Discard(CallFunc(Name('mod'), [node.left, node.right], None, None)))
         elif isinstance(node, Module):
-            self.convert(From('p16f877', [('*', None)]))
-            self.asm=0
             self.convert(node.node)
         elif isinstance(node, Mul):
             self.convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
         elif isinstance(node, Name):
             if '_'+node.name in self.dikt:
                 self.app('movf', '_'+node.name, 'w')
-            elif node.name in hdikt:
+            elif node.name in self.hdikt:
                 self.app('movf', node.name, 'w')
             else:
                 self.say('variable %s not initialized' % node.name, node.lineno)
@@ -579,7 +577,7 @@ class tree2asm:
                 self.say('Unsupported flag: %s.' % node.flags, node.lineno)
             else:
                 name=node.expr.name
-                if name in hdikt:
+                if name in self.hdikt:
                     pass
                 else:
                     name='_'+name
@@ -677,8 +675,8 @@ class tree2asm:
     def bank_by_name(self, name):
         if name in self.dikt:
             self.bank_sel(self.dikt[name][1])
-        elif name in hdikt:
-            self.bank_sel(hdikt[name][1])
+        elif name in self.hdikt:
+            self.bank_sel(self.hdikt[name][1])
             
     def bank_sel(self, bank):
         if bank==-1:

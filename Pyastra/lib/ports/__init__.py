@@ -1,7 +1,7 @@
 ############################################################################
 # $Id$
 #
-# Description: Optimizer. Pyastra project.
+# Description: port modules. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
@@ -24,32 +24,4 @@
 #
 ############################################################################
 
-from compiler.ast import *
-from pyastra.regs16f877 import *
-
-class tree2tree:
-    consts={}
-    nconsts=[]
-    global hdikt
-    
-    def __init__(self, root):
-        self.root=root
-##        self.findConsts(self.root)
-##        del self.nconsts
-##        self.replaceAll(self.root)
-##        
-##    def findConsts(self, node):
-##        if node==None:
-##            return
-##        elif isinstance(node, AssName):
-##            if node.name in hdikt or node.name in self.nconsts:
-##                return
-##            if node.flags=='OP_ASSIGN':
-##                if node.name in self.consts:
-##                    self.nconsts.append(node.name)
-##                    del self.consts[node.name]
-##                else:
-##                    
-##                
-##    def replaceAll(self, node):
-##        print self.consts
+__all__ = ['pic14']
