@@ -20,7 +20,28 @@ a bug please submit it on <br>
 <a
  href="https://sourceforge.net/tracker/?atid=643744&amp;group_id=106265&amp;func=browse">https://sourceforge.net/tracker/?atid=643744&amp;group_id=106265&amp;func=browse</a><br>
 <br>
+<h2>Syntax notes</h2>
+Syntax is planned as 100% standard python compatible (see <a
+ href="doc/README.html">doc/STATUS.html</a> to get more information
+about maturity).<br>
+<br>
+No standard modules and libraries ported.<br>
+<br>
+Built-ins are changed too. All pic's SFRs and bits names are defined in
+CAPS (e.g. PORTA, STATUS, RP0). The following built-in functions are
+supported:<br>
+<dl>
+  <dt>asm(code, instr_count [, (local_var1, local_var2, ...)])</dt>
+  <dd>include verbatim assembler <code>code</code>, that has <code>instr_count</code>
+instructions and uses local variables <code>local_varN</code><br>
+  </dd>
+  <dt>halt()</dt>
+  <dd>halt the system (iterates an infinite loop)<br>
+  </dd>
+</dl>
+<br>
 Thanks for interesting in our project!<br>
 $Id$<br>
+<br>
 </body>
 </html>
