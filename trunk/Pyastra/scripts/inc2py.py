@@ -183,6 +183,7 @@ def lkr2py(inp, out, proc_name):
     back=''
     pages=[]
     banks=[]
+    vectors=None
     shareb={}
     
     while ch:
@@ -197,6 +198,8 @@ def lkr2py(inp, out, proc_name):
                 if buf[0]=='CODEPAGE':
                     if buf[4]!='PROTECTED':
                         pages.append((buf[2][6:], buf[3][4:]))
+                    elif buf[1]=='NAME=vectors':
+                        vectors=(buf[2][6:], buf[3][4:])
                 elif buf[0]=='DATABANK':
                     if buf[4]!='PROTECTED':
                         banks.append((buf[2][6:], buf[3][4:]))
@@ -264,5 +267,9 @@ def lkr2py(inp, out, proc_name):
             out.write('(%s, %s), ' % (j[0], j[1]))
         out.write('),\n')
     out.write(')\n')
+    if vectors:
+        out.write('\nvectors=(%s, %s)\n' % (vectors[0], vectors[1]))
+    else:
+        out.write('\nvectors=None\n')
 
 main()

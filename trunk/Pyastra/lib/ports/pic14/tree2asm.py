@@ -28,14 +28,17 @@
 # FIXME: check weather builtins return correct Z flag (for cases) or they don't
 #        12f509, 16c505, 16c57, 16f57 may not work because they may have not
 #        7-bit based addressing.
-# TODO:  set function's starting bank as the bank of its last argument.
+# TODO:
+#   1. set function's starting bank as the bank of its last argument.
+#   2. add 'verbatim' argument to asm function
+#   3. save and resotre context in interrupt handler
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
 from compiler.ast import *
 
 class tree2asm:
-    body=''
+    body=[]
     stack=-1
     dikt={}
     bank_cmds=('addwf', 'andwf', 'bcf', 'bsf', 'btfsc', 'btfss', 'clrf', 'comf', 'decf', 'decfsz', 'incf', 'incfsz', 'iorwf', 'movf', 'movwf', 'rlf', 'rrf', 'subwf', 'swapf', 'xorwf')
@@ -52,6 +55,9 @@ class tree2asm:
     curr_bank=-1
     del_last=0
     last_bank=prelast_bank=-1
+    interr = ''
+    interr_instr = 0
+    in_inter = 0
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -62,6 +68,7 @@ class tree2asm:
         self.pages = self.procmod.pages
         self.banks = self.procmod.banks
         self.shareb = self.procmod.shareb
+        self.vectors = self.procmod.vectors
         self.maxram = self.procmod.maxram
         self.say = say
         
@@ -79,18 +86,7 @@ class tree2asm:
 \t#include\tp%s.inc
 
 """ % (self.PROC, self.PROC)
-        self.body=['\n\torg\t0x0\n']
-        
-        if self.ICD:
-            self.body+=['\tnop\n']
-
         if self.pages[0][0]>0:
-            self.body+=["""
-\tgoto\tmain
-
-\torg\t%s
-main
-""" % hex(self.pages[0][0])]
             self.instr = 2
         else:
             self.instr = 1
@@ -106,6 +102,28 @@ main
         self.malloc('var_test')
         
         self._convert(node)
+        
+        if self.vectors:
+            body_buf=['\n\torg\t%s\n' % hex(self.vectors[0])]
+        else:
+            body_buf=['\n\torg\t0x0\n']
+        
+        if self.ICD:
+            body_buf += ['\tnop\n']
+
+        if self.pages[0][0]>0:
+            body_buf += ["""
+\tgoto\tmain\n"""]
+            if self.interr_instr:
+                body_buf += ["\n\torg\t%s\n" % hex(self.vectors[1]), self.interr, 'retfie\n']
+                self.instr += 1
+
+            body_buf += ["""
+\torg\t%s
+main
+""" % hex(max(self.pages[0][0], self.vectors[1]+self.interr_instr))]
+
+        self.body = body_buf + self.body
         
         if self.ICD:
             self.ram_usage += 1
@@ -616,20 +634,34 @@ main
             self.curr_bank = -1
             self.last_bank = -1
             self.prelast_bank = -1
-            self.body=['\n;\n; * Function %s *\n;\n' % node.name]
+            if node.name == 'on_interrupt':
+                self.in_inter=1
+                if not self.vectors:
+                    self.say('Selected processor does not support interrupts!', level=self.error, exit_status=1)
+                if self.interr:
+                    self.say('One or more interrupt handlers already defined. New one is appendet to previous.', level=1)
+                self.body = ['\n;\n; * Interrups handler *\n;\n']
+            else:
+                self.body=['\n;\n; * Function %s *\n;\n' % node.name]
             self.instr=0
             self.app('func_%s\n' % node.name, verbatim=1)
             self._convert(node.code)
             
-            if not isinstance(node.code.nodes[-1], Return):
+            if not isinstance(node.code.nodes[-1], Return) and node.name != 'on_interrupt':
+
                 self.app('return')
                 
-            self.app(';\n; * End of function %s *\n;' % node.name, verbatim=1)
-            self.infunc=0
-            body_joined=''
-            for lmn in self.body:
-                body_joined+=lmn
-            self.funcs[node.name]=[node.argnames, body_joined, self.instr, used, self.head]
+            self.prelast_bank = -1
+            if node.name == 'on_interrupt':
+                self.app(';\n; * End of interrups handler *\n;', verbatim=1)
+                body_joined=''.join(self.body)
+                self.interr += body_joined
+                self.interr_instr += self.instr
+            else:
+                self.app(';\n; * End of function %s *\n;' % node.name, verbatim=1)
+                body_joined=''.join(self.body)
+                self.funcs[node.name]=[node.argnames, body_joined, self.instr, used, self.head]
+            self.infunc=self.in_inter=0
             self.instr=tinstr
             self.curr_bank=tcurr_bank
             self.last_bank=tlast_bank
@@ -723,8 +755,15 @@ main
 #       elif isinstance(node, Raise):
         elif isinstance(node, Return):
             if not (isinstance(node.value, Const) and node.value.value==None):
-                self._convert(node.value)
-            self.app('return')
+                if self.in_inter:
+                    self.say('Interrupt handler can not return any values! Ignoring...', level=self.warning)
+                else:
+                    self._convert(node.value)
+            
+            if self.in_inter:
+                self.app('retfie')
+            else:
+                self.app('return')
         elif isinstance(node, RightShift):
             if isinstance(node.right, Const) and self.formatConst(node.right.value)!=-1 and (node.right.value < 8 or self.op_speed):
                 buf=self.push()
@@ -908,8 +947,6 @@ main
                     else:
                         break
             
-        if name=='TRISD':
-            print self.curr_bank
         if self.curr_bank==-1 or ((bank & 1) ^ (self.curr_bank & 1)):
             if bank & 1:
                 ret += '\tbsf\tSTATUS,\tRP0\n'
