@@ -2,7 +2,7 @@
 ############################################################################
 # $Id$
 #
-# Description: Tree to assemler convertor. Pyastra project.
+# Description: Console front-end. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
@@ -36,10 +36,6 @@
 # asm - include verbatim asm text
 # halt - halt the system
 #
-#TODO:
-# * Check bank_sels
-# ? Change generation style ("return str" instead of "self.body += ...")
-# * ...
 
 import sys, os.path, compiler
 from tree2asm import tree2asm
@@ -56,7 +52,7 @@ op_speed = 0
 print
 
 if len(sys.argv) < 2:
-    print '%s usage:\npypic.py infile [outfile]' % (NFO,)
+    print '%s usage:\npyastra.py infile [outfile]' % (NFO,)
     sys.exit(4)
 
 root=compiler.parseFile(sys.argv[1])

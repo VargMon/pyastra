@@ -24,22 +24,17 @@
 #
 ############################################################################
 
-# TODO
-# * Optimizer:
-#   - delete not called functions
-#   - free vars as they are unneeded
-#   - ...
 
 import types, compiler, sys
 from compiler.ast import *
+from regs16f877 import *
 
 class tree2asm:
     head=''
     body=''
     stack=-1
     dikt={}
-    hdikt={'PORTA': (0x05, 0), 'PORTB':  (0x06, 0), 'PORTC':  (0x07, 0),
-           'EEADR': (0x0d, 2), 'EEDATA': (0x0d, 2), 'STATUS': (0x03, -1)}
+    global hdikt
     no_bank_cmds=('addlw', 'andlw', 'call', 'goto', 'iorlw', 'movlw', 'retlw',
                   'sublw', 'xorlw')
     lbl_stack=[]
@@ -90,7 +85,7 @@ class tree2asm:
 #       elif isinstance(node, AssList):
         elif isinstance(node, AssName):
             if node.flags=='OP_ASSIGN':
-                if node.name in self.hdikt:
+                if node.name in hdikt:
                     name=node.name
                 else:
                     name='_'+node.name
@@ -116,7 +111,7 @@ class tree2asm:
                     
             if all_names and isinstance(node.expr, Const) and node.expr.value == 0:
                 for n in node.nodes:
-                    if n.name in self.hdikt:
+                    if n.name in hdikt:
                         name=n.name
                     else:
                         name='_'+n.name
@@ -138,7 +133,7 @@ class tree2asm:
                             self.say('Bit assign may be applied to bytes only.', node.lineno)
                         else:
                             name=n.expr.name
-                            if name in self.hdikt:
+                            if name in hdikt:
                                 pass
                             else:
                                 name='_'+name
@@ -369,7 +364,7 @@ class tree2asm:
                 self.say('only "for <var> in xrange(<from>, <to>)" for statement is supported while', node.lineno)
                 return
             cntr = node.assign.name
-            if cntr not in self.hdikt:
+            if cntr not in hdikt:
                 cntr = '_'+cntr
             self.convert(Assign([node.assign], node.list.args[0]))
             limit = self.push()
@@ -498,7 +493,7 @@ class tree2asm:
         elif isinstance(node, Name):
             if '_'+node.name in self.dikt:
                 self.app('movf', '_'+node.name, 'w')
-            elif node.name in self.hdikt:
+            elif node.name in hdikt:
                 self.app('movf', node.name, 'w')
             else:
                 self.say('variable %s not initialized' % node.name, node.lineno)
@@ -522,7 +517,8 @@ class tree2asm:
                     self.app('goto', lbl_end)
             self.app(lbl_end, verbatim=1)
         elif isinstance(node, Pass):
-            self.app('nop')
+            #self.app('nop')
+            pass
         elif isinstance(node, Power):
             self.convert(Discard(CallFunc(Name('mul'), [node.left, node.right], None, None)))
 #       elif isinstance(node, Print):
@@ -564,7 +560,7 @@ class tree2asm:
                 self.say('Unsupported flag: %s.' % node.flags, node.lineno)
             else:
                 name=node.expr.name
-                if name in self.hdikt:
+                if name in hdikt:
                     pass
                 else:
                     name='_'+name
@@ -620,7 +616,8 @@ class tree2asm:
         return name
         
     def pop(self):
-        self.stack -= 1
+        pass
+        #self.stack -= 1
         #self.free('stack%g' % self.stack)
         
     def getLabel(self):
@@ -662,8 +659,8 @@ class tree2asm:
     def bank_by_name(self, name):
         if name in self.dikt:
             self.bank_sel(self.dikt[name][1])
-        elif name in self.hdikt:
-            self.bank_sel(self.hdikt[name][1])
+        elif name in hdikt:
+            self.bank_sel(hdikt[name][1])
             
     def bank_sel(self, bank):
         if bank==-1:
