@@ -30,9 +30,20 @@ def EEPROM_write(EEPROM_write_addr, EEPROM_write_data):
     EECON1[EEPGD] = 0
     EECON1[WREN] = 1
     INTCON[GIE] = 0
-    EECON2 = 0x55
-    EECON2 = 0xaa
-    EECON1[WR] = 1
+    #
+    # FIXME: this asm-code can't be converted to python while
+    # because of missing optimizations in Pyastra that generates
+    # extra code that prevents enabling write mode
+    #
+    asm("""
+        bsf     STATUS,      RP0
+        bsf     STATUS,      RP1
+        movlw   0x55
+        movwf   EECON2
+        movlw   0xaa
+        movwf   EECON2
+        bsf     EECON1, WR
+    """, 5)
     INTCON[GIE] = 1
     EECON1[WR] = 0
 
@@ -41,3 +52,4 @@ def EEPROM_read(EEPROM_read_addr):
     EECON1[EEPGD] = 0
     EECON1[RD] = 1
     return EEDATA
+
