@@ -469,6 +469,11 @@ class tree2asm:
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
                 self.app('goto', '$')
+            elif node.node.name == 'sleep':
+                if len(node.args) != 0:
+                    self.say('sleep() function takes no arguments', exit_status=2)
+                self.app('sleep')
+                self.app('nop')
             elif node.node.name == 'fbin':
                 if len(node.args) != 1 or not isinstance(node.args[0], Const) or not isinstance(node.args[0].value, str):
                     self.say('fbin(\'0101 0101\') function takes only one argument: binary number', exit_status=2)
@@ -1086,6 +1091,9 @@ class mem:
         
         del self.mmap[addr]
         return addr
+
+    def is_reserved(self, addr):
+        return not self.mmap.has_key(addr)
     
     def free_byte(self, addr):
         self.mmap[addr] = 1
