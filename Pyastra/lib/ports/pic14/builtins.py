@@ -39,7 +39,7 @@ lshift_label_beg
 	goto	lshift_label_beg
 	movf	_lshift_left,	w
 lshift_label_end
-""", 7)
+""")
 
 def rshift(rshift_left, rshift_right):
     asm("""
@@ -52,7 +52,7 @@ rshift_label_beg
 	goto	rshift_label_beg
 	movf	_rshift_left,	w
 rshift_label_end
-""", 7)
+""")
 
 def mul(mul_left, mul_right):
     asm("""
@@ -68,7 +68,7 @@ mul_beg
 	decfsz	mul_cntr,	f
 	goto	mul_beg
 	movf	mul_res,	w
-""", 11, ('mul_cntr', 'mul_res'))
+""")
 
 def div(div_left, div_right):
     asm("""
@@ -92,7 +92,7 @@ div_cont
 	goto	div_beg
 	
 	movf	div_res,	w
-""", 15, ('div_cntr','div_buf','div_res'))
+""")
 
 def mod(mod_left, mod_right):
     asm("""
@@ -114,7 +114,7 @@ mod_cont
 	goto	mod_beg
 	
 	movf	mod_buf,	w
-""", 13, ('mod_cntr','mod_buf',))
+""")
 
 def power(pow_left, pow_right):
     asm("""
@@ -156,4 +156,4 @@ pow_beg
 	
 	movf	pow_res,	w
 pow_end
-""", 28, ('pow_res', 'pow_buf', 'pow_cntr'))
+""")

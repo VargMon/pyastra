@@ -33,7 +33,6 @@ class tree2tree:
         self.root=root
         self.root.interrupts_on=0
         self.scan(self.root)
-        print self.root.interrupts_on
 
     def scan(self, node):
         if isinstance(node, list):
