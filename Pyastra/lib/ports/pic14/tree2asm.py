@@ -43,6 +43,7 @@ class tree2asm:
     message='Message'
     ram_usage=0
     infunc=0
+    curr_bank=-1
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -794,23 +795,27 @@ main
     def bank_sel(self, bank):
         if self.maxram < 0x80 or (not 'RP0' in self.hdikt):
             return
-        
-        if bank & 1:
-            self.body += '\tbsf\tSTATUS,\tRP0\n'
-        else:
-            self.body += '\tbcf\tSTATUS,\tRP0\n'
+
+        if (self.curr_bank==-1 or (bank & 1) ^ (self.curr_bank & 1)):
+            if bank & 1:
+                self.body += '\tbsf\tSTATUS,\tRP0\n'
+            else:
+                self.body += '\tbcf\tSTATUS,\tRP0\n'
+            self.instr += 1
             
-        if self.maxram < 0x100 or (not 'RP1' in self.hdikt):
-            return
-        
-        if bank & 2:
-            self.body += '\tbsf\tSTATUS,\tRP1\n'
-        else:
-            self.body += '\tbcf\tSTATUS,\tRP1\n'
+        if (self.curr_bank==-1 or ((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
+            if bank & 2:
+                self.body += '\tbsf\tSTATUS,\tRP1\n'
+            else:
+                self.body += '\tbcf\tSTATUS,\tRP1\n'
+            self.instr += 1
             
-        self.instr += 2
+        self.curr_bank=bank
         
     def app(self, cmd='', op1=None, op2=None, verbatim=0):
+        if verbatim or cmd=='call':
+            self.curr_bank=-1
+            
         if verbatim:
             self.body += '%s\n' % (cmd,)
             return
