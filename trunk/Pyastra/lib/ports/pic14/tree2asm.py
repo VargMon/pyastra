@@ -187,18 +187,19 @@ main
                             self.say('Bit assign may be applied to bytes only.', node.lineno)
                         else:
                             name=n.expr.name
-                            if name in self.hdikt:
-                                pass
-                            else:
+                            if name not in self.hdikt:
                                 name='_'+name
                                 self.malloc(name)
                             for i in n.subs:
                                 if isinstance(i, Const):
                                     self.app(oper, name, str(i.value))
                                 elif isinstance(i, Name) and i.name in self.hdikt:
-                                    self.app(oper, name, str(i.name))
+                                        self.app(oper, name, str(i.name))
+                                elif oper=='bsf':
+                                    self._convert(AugAssign(n.expr, '|=', LeftShift((Const(1), i))))
                                 else:
-                                    self.say('Only constant indices are supported while.', node.lineno)
+                                    self._convert(AugAssign(n.expr, '&=', Invert(LeftShift((Const(1), i)))))
+##                                        self._convert(If([(Subscript(Name('c'), 'OP_APPLY', [Name('d')]), Stmt([AugAssign(Name('a'), '|=', LeftShift((Const(1), Name('b')))), AugAssign(Name('a'), '&=', Invert(LeftShift((Const(1), Name('b')))))]))], None))
                 elif isinstance(node.expr, Subscript) and len(node.expr.subs) == 1 and isinstance(node.expr.subs, Const):
                     lbl_else=self.getLabel()
                     lbl_exit=self.getLabel()
@@ -687,10 +688,13 @@ main
                     self.app('movlw', '.0')
                     self.app('btfsc', name, str(node.subs[0].value))
                     self.app('movlw', '.1')
-                elif isinstance(node.subs[0], Name) and node.subs[0].name in self.hdikt:
-                    self.app('movlw', '.0')
-                    self.app('btfsc', name, node.subs[0].name)
-                    self.app('movlw', '.1')
+                elif isinstance(node.subs[0], Name):
+                    if node.subs[0].name in self.hdikt:
+                        self.app('movlw', '.0')
+                        self.app('btfsc', name, node.subs[0].name)
+                        self.app('movlw', '.1')
+                    else:
+                        self._convert(Bitand([node.expr, LeftShift((Const(1), node.subs[0]))]))
                 else:
                     self.say('Only constant indices are supported while.', node.lineno)
 #       elif isinstance(node, TryExcept):
