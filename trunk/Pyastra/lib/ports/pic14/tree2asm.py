@@ -32,6 +32,8 @@
 #   1. set function's starting bank as the bank of its last argument.
 #   2. add 'verbatim' argument to asm function
 #   3. save and resotre context in interrupt handler
+#   4. add support for interrupts for all processors that support
+#      interrupts.
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
@@ -97,8 +99,38 @@ class tree2asm:
             
         self._convert(From('builtins', [('*', None)]))
         self.asm=0
+        
+        addrs=None
+        for part in self.shareb:
+            #Check that part is not SFR
+            in_bank = 0
+            for bank in self.procmod.banks:
+                if bank[0] <= part[0][0] <= bank[1]:
+                    in_bank = 1
+                    break
+                
+            if not in_bank or part[0][1]-part[0][0]+1 < 4:
+                continue
 
-        self.malloc('var_test')
+            in_banks_until = -1
+            for sub in part:
+                if sub[0] >> 7 == in_banks_until + 1:
+                    in_banks_until += 1
+                else:
+                    break
+
+            if in_banks_until == self.maxram >> 7:
+                addrs=[]
+                for i in xrange(0, 4):
+                    addrs += [part[0][0] + i]
+                break
+        if addrs:
+            self.malloc('var_test', addr=addrs[0])
+            self.malloc('var_w_temp', addr=addrs[1])
+            self.malloc('var_status_temp', addr=addrs[2])
+            self.malloc('var_pclath_temp', addr=addrs[3])
+        else:
+            self.malloc('var_test')
         
         self._convert(node)
         
@@ -114,13 +146,20 @@ class tree2asm:
             body_buf += ["""
 \tgoto\tmain\n"""]
             if self.interr_instr:
-                body_buf += ["\n\torg\t%s\n" % hex(self.vectors[1]), self.interr, 'retfie\n']
-                self.instr += 1
-
-            body_buf += ["""
-\torg\t%s
-main
-""" % hex(max(self.pages[0][0], self.vectors[1]+self.interr_instr))]
+                self.interr += """
+        movf    var_pclath_temp,    W
+        movwf   PCLATH
+        swapf   var_status_temp,    W
+        movwf   STATUS
+        swapf   var_w_temp, F
+        swapf   var_w_temp, W
+        retfie\n"""
+                self.interr_instr += 12
+                self.instr += self.interr_instr
+                body_buf += ["\n\torg\t%s\n" % hex(self.vectors[1]), self.interr]
+            if self.pages[0][0] > self.vectors[1]+self.interr_instr:
+                body_buf += ["\n\torg\t%s" % hex(self.pages[0][0])]
+            body_buf += ["\nmain\n"]
 
         self.body = body_buf + self.body
         
@@ -637,13 +676,24 @@ main
                 self.in_inter=1
                 if not self.vectors:
                     self.say('Selected processor does not support interrupts!', level=self.error, exit_status=1)
+                if not self.dikt.has_key('var_w_temp'):
+                    self.say('Pyastra doesn\'t suppoort interrupts for selected processor while.', level=self.error, exit_status=1)
                 if self.interr:
-                    self.say('One or more interrupt handlers already defined. New one is appendet to previous.', level=1)
-                self.body = ['\n;\n; * Interrups handler *\n;\n']
+                    self.say('One or more interrupt handlers already defined. New one is appendet to previous.', level=self.message)
+                    self.body = []
+                else:
+                    self.body = ["""
+        movwf   var_w_temp
+        swapf   STATUS, W
+        movwf   var_status_temp
+        movf    PCLATH, W
+        movwf   var_pclath_temp
+        """]
+                self.body += ['\n;\n; * Interrupts handler *\n;\n']
             else:
                 self.body=['\n;\n; * Function %s *\n;\n' % node.name]
+                self.app('func_%s\n' % node.name, verbatim=1)
             self.instr=0
-            self.app('func_%s\n' % node.name, verbatim=1)
             self._convert(node.code)
             
             if not isinstance(node.code.nodes[-1], Return) and node.name != 'on_interrupt':
@@ -868,13 +918,20 @@ main
         self.label += 1
         return 'label%i' % self.label
     
-    def malloc(self, name, care=0):
+    def malloc(self, name, care=0, addr=None):
         if name not in self.dikt:
-            try:
-                addr=self.cvar.reserve_byte()
-            except:
-                self.say("program does not fit RAM.", level=self.warning)
-                return
+            if addr == None:
+                try:
+                    addr=self.cvar.reserve_byte()
+                except:
+                    self.say("program does not fit RAM.", level=self.error)
+                    return
+            else:
+                try:
+                    self.cvar.reserve_byte(addr)
+                except:
+                    self.say("address %i is not allocatable" % addr, level=self.warning)
+                    return
             
             self.dikt[name]=addr
             if len(self.dikt) > self.ram_usage:
@@ -968,7 +1025,7 @@ main
             del self.body[-2:]
             self.del_last=0
             self.curr_bank=self.prelast_bank
-            self.instr -= 1
+            self.instr -= 2
 
         #FIXME: more intelligent verbatim code analyzing
         if verbatim:
@@ -1015,14 +1072,18 @@ class mem:
             for addr in xrange(bank[0], bank[1]+1):
                 self.mmap[addr] = 1
                 
-    def reserve_byte(self):
+    def reserve_byte(self, addr=None):
         if not len(self.mmap):
             raise 'Program does not fit the RAM!'
         
-        k=self.mmap.keys()
-        k.sort()
-        addr=k[0]
-        del self.mmap[k[0]]
+        if addr == None:
+            k=self.mmap.keys()
+            k.sort()
+            addr=k[0]
+        elif not self.mmap.has_key(addr):
+            raise 'Address %i is reserved or is not allocatable!' % addr
+        
+        del self.mmap[addr]
         return addr
     
     def free_byte(self, addr):
