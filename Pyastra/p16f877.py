@@ -1,4 +1,5 @@
 ############################################################################
+# $Id$
 #
 # Description: Tree to assemler convertor. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>

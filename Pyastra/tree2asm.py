@@ -1,4 +1,5 @@
 ############################################################################
+# $Id$
 #
 # Description: Tree to assemler convertor. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
@@ -27,6 +28,7 @@
 # * Optimizer:
 #   - delete not called functions
 #   - free vars as they are unneeded
+#   - ...
 
 import types, compiler, sys
 from compiler.ast import *
@@ -102,9 +104,16 @@ class tree2asm:
 #       elif isinstance(node, Assert):
         elif isinstance(node, Assign):
             all_names=1
+            any_sscr=0
+            all_sscr=1
             for n in node.nodes:
-                if isinstance(n, Name):
+                if not isinstance(n, AssName):
                     all_names=0
+                if isinstance(n, Subscript):
+                    any_sscr=1
+                else:
+                    all_sscr=0
+                    
             if all_names and isinstance(node.expr, Const) and node.expr.value == 0:
                 for n in node.nodes:
                     if n.name in self.hdikt:
@@ -113,6 +122,32 @@ class tree2asm:
                         name='_'+n.name
                         self.malloc(name)
                     self.app('clrf', name)
+            elif any_sscr:
+                if not all_sscr:
+                    self.say('mixing bit and byte assign is not supported.', node.lineno)
+                elif not isinstance(node.expr, Const):
+                    self.say('Bits are noted by constants only (0 for 0, other for 1).', node.lineno)
+                else:
+                    if node.expr.value:
+                        oper='bsf'
+                    else:
+                        oper='bcf'
+                        
+                    for n in node.nodes:
+                        if not isinstance(n.expr, Name):
+                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                        else:
+                            name=n.expr.name
+                            if name in self.hdikt:
+                                pass
+                            else:
+                                name='_'+name
+                                self.malloc(name)
+                            for i in n.subs:
+                                if not isinstance(i, Const):
+                                    self.say('Only constant indices are supported while.', node.lineno)
+                                else:
+                                    self.app(oper, name, str(i.value))
             else:
                 self.convert(node.expr)
                 
@@ -238,62 +273,65 @@ class tree2asm:
                 self.app('call', 'func_%s' % node.node.name)
                     
 ##      elif isinstance(node, Class):
-## not tested! use with caution!
         elif isinstance(node, Compare):
             if len(node.expr.ops) != 1:
                 self.say('Currently multiple comparisions are not supported', node.lineno)
             buf = self.push()
             nodes=node.expr.ops
-##            if nodes[0][0]=='<':
-##                self.convert(node.expr)
-##                self.app('movwf', buf)
-##                self.convert(nodes[0][1])
-##                self.app('subwf', buf, 'w')
-##                self.app('bcf', 'STATUS', 'Z')
-##                #skip if -(node.expr - nodes[0][1]) > 0 (C=1) ->
-##                #     if node.expr < nodes[0][1] =>
-##                #     true(Z=0)
-##                #if node.expr >= nodes[0][1] ->
-##                #   -(node.expr - nodes[0][1]) <= 0 (C=0) =>
-##                #     true(Z=0)
-##                self.app('btfss', 'STATUS', 'C')
-##                self.app('bsf', 'STATUS', 'Z')
-##            elif nodes[0][0]=='>':
-##                self.convert(nodes[0][1])
-##                self.app('movwf', buf)
-##                self.convert(node.expr)
-##                self.app('subwf', buf, 'w')
-##                self.app('bsf', 'STATUS', 'Z')
-##                #skip if -(nodes[0][1] - node.expr) > 0 (C=1) ->
-##                #     if nodes[0][1] < node.expr =>
-##                #     true(Z=0)
-##                #if nodes[0][1] >= node.expr ->
-##                #   -(nodes[0][1] - node.expr) <= 0 (C=0) =>
-##                #     true(Z=0)
-##                self.app('btfss', 'STATUS', 'C')
-##                self.app('bcf', 'STATUS', 'Z')
-##            el
-            if nodes[0][0]=='==':
+            if nodes[0][0]=='<':
+                lbl_false=self.getLabel()
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be < 0 (Z=0 and C=0)
+                self.app('btfsc', 'STATUS', 'Z')
+                self.app('goto', lbl_false) # node.expr = nodes[0][1]
+                self.app('bcf', 'STATUS', 'Z') # true
+                self.app('btfsc', 'STATUS', 'C')
+                self.app(lbl_false, verbatim=1)
+                self.app('bsf', 'STATUS', 'Z') # false
+            elif nodes[0][0]=='>':
+                lbl_false=self.getLabel()
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be > 0 (Z=0 and C=1)
+                self.app('btfsc', 'STATUS', 'Z')
+                self.app('goto', lbl_false) # node.expr = nodes[0][1]
+                self.app('bcf', 'STATUS', 'Z') # true
+                self.app('btfss', 'STATUS', 'C')
+                self.app(lbl_false, verbatim=1)
+                self.app('bsf', 'STATUS', 'Z') # false
+            elif nodes[0][0]=='==':
                 self.convert(node.expr)
                 self.app('movwf', buf)
                 self.convert(nodes[0][1])
                 self.app('subwf', buf, 'w')
                 self.app('comf', buf, 'w')
-##            elif nodes[0][0]=='<=':
-##                self.convert(nodes[0][1])
-##                self.app('movwf', buf)
-##                self.convert(node.expr)
-##                self.app('subwf', buf, 'w')
-##                self.app('bcf', 'STATUS', 'Z')
-##                #skip if -(nodes[0][1] - node.expr) > 0 (C=1) ->
-##                #     if node.expr < nodes[0][1] =>
-##                #     false(Z=1)
-##                #if node.expr == nodes[0][1] ->
-##                #   +(node.expr - nodes[0][1]) >= 0 (C=0) =>
-##                #     true(Z=0)
-##                self.app('btfss', 'STATUS', 'C')
-##                self.app('bsf', 'STATUS', 'Z')
-##            elif nodes[0][0]=='>=':
+            elif nodes[0][0]=='<=':
+                lbl_true=self.getLabel()
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be <= 0 (Z=1 or C=0)
+                self.app('btfsc', 'STATUS', 'Z')
+                self.app('goto', lbl_true) # node.expr = nodes[0][1]
+                self.app('bsf', 'STATUS', 'Z') # false
+                self.app('btfss', 'STATUS', 'C')
+                self.app(lbl_true, verbatim=1)
+                self.app('bcf', 'STATUS', 'Z') # true
+            elif nodes[0][0]=='>=':
+                lbl_true=self.getLabel()
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w') # node.expr - nodes[0][1] should be >= 0 (Z=1 or C=1)
+                self.app('btfsc', 'STATUS', 'Z')
+                self.app('goto', lbl_true) # node.expr = nodes[0][1]
+                self.app('bsf', 'STATUS', 'Z') # false
+                self.app('btfsc', 'STATUS', 'C')
+                self.app(lbl_true, verbatim=1)
+                self.app('bcf', 'STATUS', 'Z') # true
             elif nodes[0][0]=='!=':
                 self.convert(node.expr)
                 self.app('movwf', buf)
@@ -517,7 +555,26 @@ class tree2asm:
             self.convert(node.right)
             self.app('subwf', buf, 'w')
             self.pop()
-#       elif isinstance(node, Subscript):
+        elif isinstance(node, Subscript):
+            if not isinstance(node.expr, Name):
+                self.say('Bit assign may be applied to bytes only.', node.lineno)
+            elif len(node.subs) != 1:
+                self.say('More than one subscripts are not fully supported while.', node.lineno)
+            elif not node.flags=='OP_APPLY':
+                self.say('Unsupported flag: %s.' % node.flags, node.lineno)
+            else:
+                name=node.expr.name
+                if name in self.hdikt:
+                    pass
+                else:
+                    name='_'+name
+                    self.malloc(name)
+                if not isinstance(node.subs[0], Const):
+                    self.say('Only constant indices are supported while.', node.lineno)
+                else:
+                    self.app('movlw', '.0')
+                    self.app('btfsc', name, str(node.subs[0].value))
+                    self.app('movlw', '.1')
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
