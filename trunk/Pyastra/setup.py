@@ -62,7 +62,7 @@ instruction set only. Its main goals are:
 """,
       classifiers = [
           'Development Status :: 3 - Alpha',
-          'Environment :: Console (Text Based)',
+          'Environment :: Console',
           'Intended Audience :: Developers',
           'Intended Audience :: Education',
           'Intended Audience :: Manufacturing',
@@ -72,6 +72,6 @@ instruction set only. Its main goals are:
           'Operating System :: OS Independent',
           'Programming Language :: Python',
           'Topic :: Software Development :: Compilers',
-          'Translations :: English',
+          'Natural Language :: English',
       ],
      )
