@@ -109,6 +109,7 @@ class tree2asm:
         if node.interrupts_on:
             for part in self.shareb:
                 #Check that part is not SFR
+                addrs=[]
                 in_bank = 0
                 for bank in self.procmod.banks:
                     if bank[0] <= part[0][0] <= bank[1]:
@@ -119,24 +120,28 @@ class tree2asm:
                     continue
 
                 in_banks_until = -1
+                
                 for sub in part:
                     if sub[0] >> 7 == in_banks_until + 1:
                         in_banks_until += 1
                     else:
                         break
-
+                
+                allocated=0
                 if in_banks_until == self.maxram >> 7:
-                    addrs=[]
-                    for i in xrange(0, 4):
-                        addrs += [part[0][0] + i]
-                    break
+                    for i in xrange(len(part[0])):
+                        if not self.cvsr.is_reserved(addrs):
+                            addrs += [part[0][0] + i]
+                            allocated += 1
+                            if allocated == 3:
+                                break
+                    if allocated:
+                        break
         if addrs:
-            self.malloc('var_test', addr=addrs[0])
             self.malloc('var_w_temp', addr=addrs[1])
             self.malloc('var_status_temp', addr=addrs[2])
             self.malloc('var_pclath_temp', addr=addrs[3])
-        else:
-            self.malloc('var_test')
+        self.malloc('var_test')
         
         self._convert(node)
         
