@@ -1,0 +1,3 @@
+To install Pyastra simply run the following command under root user:
+
+python setup.py install
