@@ -627,6 +627,9 @@ main
             self.app(lbl1, verbatim=1)
             self.app('movlw', '1')
             self.app(lbl_end, verbatim=1)
+            buf=self.push()
+            self.app('movwf', buf)
+            self.pop()
         elif isinstance(node, Or):
             lbl_end=self.getLabel()
             for n in xrange(len(node.nodes)):
@@ -697,6 +700,9 @@ main
                         self._convert(Bitand([node.expr, LeftShift((Const(1), node.subs[0]))]))
                 else:
                     self.say('Only constant indices are supported while.', node.lineno)
+                buf=self.push()
+                self.app('movwf', buf)
+                self.pop()
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
