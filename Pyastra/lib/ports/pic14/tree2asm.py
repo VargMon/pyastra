@@ -724,11 +724,17 @@ main
             self.bank_sel(self.hdikt[name] >> 7 << 7)
             
     def bank_sel(self, bank):
+        if self.banks[-1][1] < 0x80:
+            return
+        
         if bank and 1:
             self.body += '\tbsf\tSTATUS,\tRP0\n'
         else:
             self.body += '\tbcf\tSTATUS,\tRP0\n'
             
+        if self.banks[-1][1] < 0xff:
+            return
+        
         if bank and 2:
             self.body += '\tbsf\tSTATUS,\tRP1\n'
         else:
