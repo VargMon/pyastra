@@ -64,6 +64,7 @@ class tree2asm:
     inter_ret=''
     last_instr=0
     prelast_instr=0
+    cur_page=0
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -164,7 +165,8 @@ class tree2asm:
             body_buf += ["""
 \tgoto\tmain\n"""]
             if self.interr_instr:
-                self.interr += """
+                if len(self.pages) > 1:
+                    self.interr += """
         movf    var_test_temp,      W
         movwf   var_test
         movf    var_pclath_temp,    W
@@ -174,7 +176,17 @@ class tree2asm:
         swapf   var_w_temp, F
         swapf   var_w_temp, W
         retfie\n"""
-                self.interr_instr += 9
+                    self.interr_instr += 9
+                else:
+                    self.interr += """
+        movf    var_test_temp,      W
+        movwf   var_test
+        swapf   var_status_temp,    W
+        movwf   STATUS
+        swapf   var_w_temp, F
+        swapf   var_w_temp, W
+        retfie\n"""
+                    self.interr_instr += 7
                 self.instr += self.interr_instr
                 body_buf += ["\n\torg\t%s\n" % hex(self.vectors[1]), self.interr]
             if self.pages[0][0] > self.vectors[1]+self.interr_instr:
@@ -191,11 +203,14 @@ class tree2asm:
             
         ftest=0
         self.tail=fbuf=''
+        t_instr = self.pages[0][0]+self.instr
         for i in self.funcs:
             if not self.funcs[i][1]:
                 self.say('Undefined function call: %s' % i)
             if self.funcs[i][3]:
                 ftest=1
+                (t_str, t_instr) = self.page_org(t_instr, self.funcs[i][2])
+                fbuf += t_str
                 fbuf += self.funcs[i][1]
                 self.instr += self.funcs[i][2]
                 
@@ -203,6 +218,7 @@ class tree2asm:
             self.tail += "\n;\n; SUBROUTINES\n;\n\n%s" % fbuf
             
         self.tail += "\n\tend\n"
+        self.instr=t_instr
         
     def _convert(self, node):
         if node==None:
@@ -767,7 +783,8 @@ class tree2asm:
                     self.say('One or more interrupt handlers already defined. New one is appendet to previous.', level=self.message)
                     self.body = []
                 else:
-                    self.body = ["""
+                    if len(self.pages) > 1:
+                        self.body = ["""
         movwf   var_w_temp
         swapf   STATUS, W
         movwf   var_status_temp
@@ -778,8 +795,17 @@ class tree2asm:
         bcf     PCLATH, 3
         bcf     PCLATH, 4
         """]
+                        self.instr = 9
+                    else:
+                        self.body = ["""
+        movwf   var_w_temp
+        swapf   STATUS, W
+        movwf   var_status_temp
+        movf    var_test, W
+        movwf   var_test_temp
+        """]
+                        self.instr = 5
                 self.body += ['\n;\n; * Interrupts handler *\n;\n']
-                self.instr = 9
             else:
                 self.body=['\n;\n; * Function %s *\n;\n' % node.name]
                 self.app('func_%s\n' % node.name, verbatim=1)
@@ -1116,6 +1142,15 @@ class tree2asm:
         self.last_bank=self.curr_bank
         self.curr_bank=bank
         return ret
+
+    def page_org(self, instr, f_instr):
+        if self.pages[self.cur_page][1] >= instr + f_instr:
+            return ('', instr+f_instr)
+        else:
+            self.cur_page += 1
+            if len(self.pages)==self.cur_page:
+                self.say('Program doesn\'t fit program memory.', level=self.error, exit_status=1)
+            return ('\torg\t%s\n' % hex(self.pages[self.cur_page][0]), self.pages[self.cur_page][0]+f_instr)
     
     def test(self):
         self.app('movwf', 'var_test')
@@ -1167,7 +1202,7 @@ class tree2asm:
 
 ##        if self.ve:
 ##            print self.curr_bank, self.last_bank, self.prelast_bank
-        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+        if len(self.pages) > 1 and op1 and cmd=='call':#(cmd in self.pagesel_cmds):
             #has_dollar=0
             #for ch in op1:
             #    if ch=='$':
@@ -1185,7 +1220,7 @@ class tree2asm:
             bodys += '\t%s' % (cmd,)
         self.instr += 1
         
-        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+        if len(self.pages) > 1 and op1 and cmd=='call':#(cmd in self.pagesel_cmds):
             bodys += '\n\tpagesel $+1'
             self.instr += 2
 
