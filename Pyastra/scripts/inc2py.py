@@ -197,8 +197,6 @@ def lkr2py(inp, out, proc_name):
                 if buf[0]=='CODEPAGE':
                     if buf[4]!='PROTECTED':
                         pages.append((buf[2][6:], buf[3][4:]))
-                        if eval(buf[3][4:]) > maxram:
-                            maxram=eval(buf[3][4:])
                 elif buf[0]=='DATABANK':
                     if buf[4]!='PROTECTED':
                         banks.append((buf[2][6:], buf[3][4:]))
