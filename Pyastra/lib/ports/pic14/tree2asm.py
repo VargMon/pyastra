@@ -129,18 +129,18 @@ class tree2asm:
                 
                 allocated=0
                 if in_banks_until == self.maxram >> 7:
-                    for i in xrange(len(part[0])):
-                        if not self.cvsr.is_reserved(addrs):
-                            addrs += [part[0][0] + i]
+                    for i in xrange(part[0][0], part[0][1]+1):
+                        if not self.cvar.is_reserved(i):
+                            addrs += [i]
                             allocated += 1
                             if allocated == 3:
                                 break
                     if allocated:
                         break
         if addrs:
-            self.malloc('var_w_temp', addr=addrs[1])
-            self.malloc('var_status_temp', addr=addrs[2])
-            self.malloc('var_pclath_temp', addr=addrs[3])
+            self.malloc('var_w_temp', addr=addrs[0])
+            self.malloc('var_status_temp', addr=addrs[1])
+            self.malloc('var_pclath_temp', addr=addrs[2])
         self.malloc('var_test')
         
         self._convert(node)
