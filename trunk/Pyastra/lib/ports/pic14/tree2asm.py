@@ -104,7 +104,7 @@ main
                 self.say('Undefined function call: %s' % i)
             if self.funcs[i][3]:
                 ftest=1
-                fbuf = self.funcs[i][1]
+                fbuf += self.funcs[i][1]
                 self.instr += self.funcs[i][2]
                 
         if ftest:
