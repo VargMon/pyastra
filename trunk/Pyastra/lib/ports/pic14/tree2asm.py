@@ -655,7 +655,8 @@ class tree2asm:
                 self.app('goto', lbl_beg)
             else:
                 limit = self.push()
-                self._convert(Assign([AssName(limit, 'OP_ASSIGN')], node.list.args[1]))
+                self._convert(node.list.args[1])
+                self.app('movwf', limit)
                 
                 self.app('\n%s' % lbl_beg, verbatim=1)
                 
