@@ -606,11 +606,11 @@ main
 #       elif isinstance(node, Keyword):
 #       elif isinstance(node, Lambda):
         elif isinstance(node, LeftShift):
-            if isinstance(node.right, Const) and self.op_speed:
+            if isinstance(node.right, Const) and self.formatConst(node.right.value)!=-1 and (node.right.value < 8 or self.op_speed):
                 buf=self.push()
                 self._convert(node.left)
                 self.app('movwf', buf)
-                for i in xrange(node.right.value[:-1]):
+                for i in xrange(node.right.value-1):
                     self.app('rlf', buf, 'f')
                 self.app('rlf', buf, 'w')
                 self.pop()
@@ -673,7 +673,7 @@ main
                 buf=self.push()
                 self._convert(node.left)
                 self.app('movwf', buf)
-                for i in xrange(node.right.value):
+                for i in xrange(node.right.value-1):
                     self.app('rrf', buf, 'w')
                     
                 self.app('rrf', buf, 'f')
