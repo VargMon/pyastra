@@ -193,10 +193,12 @@ main
                                 name='_'+name
                                 self.malloc(name)
                             for i in n.subs:
-                                if not isinstance(i, Const):
-                                    self.say('Only constant indices are supported while.', node.lineno)
-                                else:
+                                if isinstance(i, Const):
                                     self.app(oper, name, str(i.value))
+                                elif isinstance(i, Name) and i.name in self.hdikt:
+                                    self.app(oper, name, str(i.name))
+                                else:
+                                    self.say('Only constant indices are supported while.', node.lineno)
                 elif isinstance(node.expr, Subscript) and len(node.expr.subs) == 1 and isinstance(node.expr.subs, Const):
                     lbl_else=self.getLabel()
                     lbl_exit=self.getLabel()
@@ -216,10 +218,12 @@ main
                                 name='_'+name
                                 self.malloc(name)
                             for i in n.subs:
-                                if not isinstance(i, Const):
-                                    self.say('Only constant indices are supported while.', node.lineno)
-                                else:
+                                if isinstance(i, Const):
                                     self.app('bcf', name, str(i.value))
+                                elif isinstance(i, Name) and i.name in self.hdikt:
+                                    self.app('bcf', name, str(i.name))
+                                else:
+                                    self.say('Only constant indices are supported while.', node.lineno)
                     self.app('goto', lbl_exit)
                     self.app('\n%s' % lbl_else, verbatim=1)
                     for n in node.nodes:
@@ -231,10 +235,12 @@ main
                                 name='_'+name
                                 self.malloc(name)
                             for i in n.subs:
-                                if not isinstance(i, Const):
-                                    self.say('Only constant indices are supported while.', node.lineno)
-                                else:
+                                if isinstance(i, Const):
                                     self.app('bsf', name, str(i.value))
+                                elif isinstance(i, Name) and i.name in self.hdikt:
+                                    self.app('bsf', name, str(i.name))
+                                else:
+                                    self.say('Only constant indices are supported while.', node.lineno)
                     self.app('\n%s' % lbl_exit, verbatim=1)
                 else:
                     self.say('Bits may be assigned to constants and bits noted by constant indexes only!', node.lineno)
@@ -365,7 +371,7 @@ main
                     self.funcs[node.node.name][3]=1
                     
                 if  len(self.funcs[node.node.name][0]) != len(node.args):
-                    self.say('function %s takes exactly %g argument(s)' % (node.name, len(self.funcs[node.name][0])), exit_status=2)
+                    self.say('function %s takes exactly %g argument(s)' % (node.node.name, len(self.funcs[node.node.name][0])), exit_status=2)
                              
                 for i in xrange(len(node.args)):
                     (aname, val)=(self.funcs[node.node.name][0][i], node.args[i])
