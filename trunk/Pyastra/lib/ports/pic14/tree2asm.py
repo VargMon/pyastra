@@ -48,6 +48,7 @@ class tree2asm:
     infunc=0
     curr_bank=-1
     del_last=0
+    last_bank=prelast_bank=-1
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -816,20 +817,21 @@ main
         
         ret=''
         
-        if (self.curr_bank==-1 or (bank & 1) ^ (self.curr_bank & 1)):
+        if self.curr_bank==-1 or ((bank & 1) ^ (self.curr_bank & 1)):
             if bank & 1:
                 ret += '\tbsf\tSTATUS,\tRP0\n'
             else:
                 ret += '\tbcf\tSTATUS,\tRP0\n'
             self.instr += 1
             
-        if (self.curr_bank==-1 or ((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
+        if self.curr_bank==-1 or (((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
             if bank & 2:
                 ret += '\tbsf\tSTATUS,\tRP1\n'
             else:
                 ret += '\tbcf\tSTATUS,\tRP1\n'
             self.instr += 1
             
+        self.prelast_bank=self.last_bank
         self.last_bank=self.curr_bank
         self.curr_bank=bank
         return ret
@@ -843,7 +845,7 @@ main
         if self.del_last:
             del self.body[-2:]
             self.del_last=0
-            self.curr_bank=self.last_bank
+            self.curr_bank=self.prelast_bank
             self.instr -= 1
 
         #FIXME: more intelligent verbatim code analyzing
