@@ -43,7 +43,7 @@ def EEPROM_write(EEPROM_write_addr, EEPROM_write_data):
         movlw   0xaa
         movwf   EECON2
         bsf     EECON1, WR
-    """, 5)
+    """, 7)
     INTCON[GIE] = 1
     EECON1[WR] = 0
 

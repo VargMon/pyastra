@@ -67,9 +67,26 @@ def PIC_ADC_on():
 def PIC_ADC_get():
     ADCON0[GO]=1
     
-    while ADCON0[GO]:
-        pass
+##    while ADCON0[GO]:
+##        pass
+    asm("""
+	btfsc ADCON0, GO
+	goto  $-1
+    """)
     
     PIC_ADC_resl=ADRESL
     PIC_ADC_resh=ADRESH
 
+#
+def PIC_ADC_switch(adc_channel):
+    #clear old channel
+    ADCON0 = ADCON0 & fbin('1100 0111')
+
+    #set new channel
+    if adc_channel < 5:
+        TRISA[adc_channel] = 1
+    else:
+        TRISE[adc_channel-5] = 1
+        
+    ADCON0 = ADCON0 | adc_channel << 3
+    
