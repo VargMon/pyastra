@@ -33,6 +33,7 @@
 #   2. add 'verbatim' argument to asm function
 #   3. add support for interrupts for all processors that support
 #      interrupts.
+#   4. check whether all processor definition file are ok.
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
@@ -85,11 +86,14 @@ class tree2asm:
             self.max_instr += i[1] - i[0] + 1
     
     def convert(self, node):
+        proc_clean=self.PROC
+        if proc_clean[-1]=='i':
+            proc_clean = proc_clean[:-1]
         self.head="""
 \tprocessor\t%s
 \t#include\tp%s.inc
 
-""" % (self.PROC, self.PROC)
+""" % (proc_clean, proc_clean)
         if self.pages[0][0]>0:
             self.instr = 2
         else:
@@ -97,9 +101,6 @@ class tree2asm:
 
         self.cvar=mem(self.procmod.banks)
         if self.ICD:
-            self.cvar.reserve_byte(0x70)
-            for addr in xrange (0x1eb, 0x1f0):
-                self.cvar.reserve_byte(addr)
             self.instr += 1
             
         self._convert(From('builtins', [('*', None)]))

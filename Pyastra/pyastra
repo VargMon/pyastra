@@ -47,8 +47,8 @@ ports=('pic14',)
 ICD = 0
 ASSEMBLERS=(('gpasm', ''), ('mpasm.exe', ''), ('mpasmwin.exe', ''),)
 #
-# By default optimises for size,
-# but if op_speed=1 than optimises for speed.
+# By default optimizes for size,
+# but if op_speed=1 than optimizes for speed.
 # 
 op_speed = 0
 compile_only = 0
@@ -72,7 +72,7 @@ Options:
   -S  --compile   Compile only, don't assemble or link.    
   -o  --output    Alternate name of output file.
   -h, --help      Show this usage message and exit
-""" % (NFO, ports[0], ports[0], procs[0], )
+""" % (NFO, ports[0], ports[0], procs_clean[0], )
     sys.exit(4)
 
 def say(message, line=None, level=tree2asm.error, exit_status=0):
@@ -107,7 +107,8 @@ http://sourceforge.net/tracker/?group_id=106265&atid=643744
 """
 
 procs=pyastra.ports.pic14.procs.__all__
-PROC=procs[0]
+procs_clean = filter(lambda item: item[-1]!='i', procs)
+PROC=procs_clean[0]
 out_name=None
 
 try:
@@ -126,7 +127,6 @@ for o, a in opts:
     elif o in ('-o', '--output'):
         out_name=os.path.splitext(a)[0]
     elif o=='--icd':
-        print 'WARNING: ICD support may be broken for some microcontrollers!'
         ICD = 1
     elif o=='-m':
         if a=='list':
@@ -139,9 +139,9 @@ http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
             sys.exit(4)
     elif o=='-p':
         if a=='list':
-            print '%i supported %s-port specific processors:\n%s' % (len(procs), ports[0], str(procs))
+            print '%i supported %s-port specific processors:\n%s' % (len(procs_clean), ports[0], str(procs_clean))
             sys.exit(0)
-        elif a in procs:
+        elif a in procs_clean:
             PROC=a
         else:
             print """%s processor is not supported by the current version.
@@ -158,8 +158,14 @@ root=compiler.parseFile(args[0])
 if not out_name:
     out_name=os.path.splitext(args[0])[0]
 
-print "Compiling from %s to %s for processor %s (port %s)..." % (
-      args[0], out_name+'.asm', PROC, 'pic14')
+if ICD:
+    if PROC + 'i' not in procs:
+        print 'Seems like microcontroller %s doesn\'t support ICD.' % PROC
+        sys.exit(4)
+    else:
+        print "Compiling from %s to %s for processor %s (port %s)..." % (
+              args[0], out_name+'.asm', PROC, 'pic14')
+        PROC += 'i'
 
 op=tree2tree(root, say)
 p=tree2asm(ICD, op_speed, PROC, say)

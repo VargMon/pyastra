@@ -85,7 +85,10 @@ def main():
             
         for proc_name in names:
             maxram=0
-            in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name_)
+            if proc_name[-1]=='i':
+                in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name_[:-1])
+            else:
+                in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name_)
             in2_name=os.path.join(diry, 'lkr', '%s.lkr' % proc_name)
             out_name='%s.py' % proc_name
             

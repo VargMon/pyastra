@@ -37,7 +37,7 @@ class tree2tree:
         #print self.root
         self.root=self.scan(self.root)
         #print self.root
-        self.root=self.replace(self.root)
+        #self.root=self.replace(self.root)
         self.root.interrupts_on=self.interrupts_on
         #print self.root
         #sys.exit()
