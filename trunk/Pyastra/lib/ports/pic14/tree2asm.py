@@ -44,7 +44,7 @@ class tree2asm:
     error='Error'
     warning='Warning'
     message='Message'
-    ram_usage=0
+    ram_usage=1
     infunc=0
     curr_bank=-1
     del_last=0
@@ -73,6 +73,7 @@ class tree2asm:
         self.head="""
 \tprocessor\t%s
 \t#include\tp%s.inc
+
 """ % (self.PROC, self.PROC)
         self.body=['\n\torg\t0x0\n']
         
@@ -89,15 +90,16 @@ main
             self.instr = 2
         else:
             self.instr = 1
-        
+
+        self.cvar=[self.banks[0][0]]
         if self.ICD:
-            self.cvar=[0x21]
+            self.cvar[0] += 1
             self.instr += 1
-        else:
-            self.cvar=[0x20]
             
         self._convert(From('builtins', [('*', None)]))
         self.asm=0
+
+        self.malloc('var_test')
         
         self._convert(node)
         
@@ -464,10 +466,7 @@ main
             self.pop()
         elif isinstance(node, Const):
             self.app('movlw', self.formatConst(node.value))
-            buf=self.push()
-            self.app('movwf', buf)
-            self.pop()
-            self.del_last=1
+            self.test()
         elif isinstance(node, Continue):
             self.app('goto', self.lbl_stack[-1][0])
 ##      elif isinstance(node, Dict):
@@ -640,10 +639,7 @@ main
             self.app(lbl1, verbatim=1)
             self.app('movlw', '1')
             self.app(lbl_end, verbatim=1)
-            buf=self.push()
-            self.app('movwf', buf)
-            self.pop()
-            self.del_last=1
+            self.test()
         elif isinstance(node, Or):
             lbl_end=self.getLabel()
             for n in xrange(len(node.nodes)):
@@ -715,10 +711,7 @@ main
                         self._convert(Bitand([node.expr, LeftShift((Const(1), node.subs[0]))]))
                 else:
                     self.say('Only constant indices are supported while.', node.lineno)
-                buf=self.push()
-                self.app('movwf', buf)
-                self.pop()
-                self.del_last=1
+                self.test()
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
@@ -834,6 +827,10 @@ main
         self.last_bank=self.curr_bank
         self.curr_bank=bank
         return ret
+    
+    def test(self):
+        self.app('movwf', 'var_test')
+        self.del_last=1
         
     def app(self, cmd='', op1=None, op2=None, verbatim=0):
         if self.del_last:
