@@ -197,32 +197,10 @@ main
                                     self.say('Only constant indices are supported while.', node.lineno)
                                 else:
                                     self.app(oper, name, str(i.value))
-                elif isinstance(node.expr, Subscript):
-##                    if len(node.nodes)==1 and len(node.nodes[0].subs)==1 and len(node.nodes[0].subs)==1 and isinstance(node.nodes[0].subs[0], Const) and isinstance(node.nodes[0].expr, Name) and isinstance(node.nodes[0].expr, Name) and (node.nodes[0].expr.name not in self.hdikt):
-##                        name=node.nodes[0].expr.name
-##                        if name in self.hdikt:
-##                            pass
-##                        else:
-##                            name='_'+name
-##                            self.malloc(name)
-##                        ename=node.expr.expr.name
-##                        etest=1
-##                        if '_'+ename in self.dikt:
-##                            ename='_'+ename
-##                        elif ename not in self.hdikt:
-##                            self.say('variable %s not initialized' % ename, node.lineno)
-##                            etest=0
-##                            
-##                        if etest:
-##                            self.app('bcf', name, str(node.nodes[0].subs[0].value))
-##                            self.app('btfsc', ename, str(node.expr.subs[0].value))
-##                            self.app('bsf', name, str(node.nodes[0].subs[0].value))
-##                    
+                elif isinstance(node.expr, Subscript) and len(node.expr.subs) == 1 and isinstance(node.expr.subs, Const):
                     lbl_else=self.getLabel()
                     lbl_exit=self.getLabel()
 
-                    if len(node.expr.subs) != 1:
-                        self.say('Only constant index is supported while.', node.lineno)
                     ename=node.expr.expr.name
                     if ename not in self.hdikt:
                         ename='_'+ename
@@ -259,7 +237,7 @@ main
                                     self.app('bsf', name, str(i.value))
                     self.app('\n%s' % lbl_exit, verbatim=1)
                 else:
-                    self.say('Bits may be assigned to bits and constants only!', node.lineno)
+                    self.say('Bits may be assigned to constants and bits noted by constant indexes only!', node.lineno)
             else:
                 self._convert(node.expr)
                 
