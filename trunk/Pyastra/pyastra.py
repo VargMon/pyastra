@@ -42,7 +42,7 @@
 import sys, os.path, compiler
 from tree2asm import tree2asm
 
-NFO='pypic 0.1.0'
+NFO='pyastra 0.1.0'
 PROC='16f877'
 ICD = 1
 #

@@ -95,7 +95,7 @@ class tree2asm:
                     self.malloc(name)
                 self.app('movwf', name)
             elif node.flags=='OP_DELETE':
-                self.free('_'+name)
+                self.free('_'+node.name)
             else:
                 self.say('%s flag is not supported while.' % node.flags, node.lineno)
 #       elif isinstance(node, AssTuple):
@@ -107,7 +107,12 @@ class tree2asm:
                     all_names=0
             if all_names and isinstance(node.expr, Const) and node.expr.value == 0:
                 for n in node.nodes:
-                    self.app('clrf', n.name)
+                    if n.name in self.hdikt:
+                        name=n.name
+                    else:
+                        name='_'+n.name
+                        self.malloc(name)
+                    self.app('clrf', name)
             else:
                 self.convert(node.expr)
                 
@@ -185,7 +190,7 @@ class tree2asm:
             self.app('xorwf', buf, 'w')
             self.pop()
         elif isinstance(node, Break):
-            self.app('goto', self.lbl_stack[-1][2])
+            self.app('goto', self.lbl_stack[-1][1])
         elif isinstance(node, CallFunc):
             if node.star_args or node.dstar_args:
                 self.say('*-args and **-args are not supported while')
@@ -230,35 +235,75 @@ class tree2asm:
                 self.app('call', 'func_%s' % node.node.name)
                     
 ##      elif isinstance(node, Class):
-##!!!      elif isinstance(node, Compare):
-##          self.convert(node.expr)
-##          self.push()
-##          self.bank_sel(self.stack_b[self.stack])
-##          self.body += '      movwf   stack%i\n' % self.stack
-##          self.instr += 1
-##          for n in xrange(len(node.ops)):
-##              self.convert(nodes[n][1])
-##              if nodes[n][0]=='<':
-##                  self.bank_sel(self.stack_b[self.stack])
-##                  self.body += '      subwf   stack%i,        w\n' % self.stack
-##              elif nodes[n][0]=='>':
-##              elif nodes[n][0]=='==':
-##                  self.bank_sel(self.stack_b[self.stack])
-##                  self.body += '      subwf   stack%i,        w\n' % self.stack
-##                  self.body += '      subwf   stack%i,        w\n' % self.stack
-##                  self.instr += 1
-##              elif nodes[n][0]=='<=':
-##              elif nodes[n][0]=='>=':
-##              elif nodes[n][0]=='!=':
-##              elif nodes[n][0]=='is':
-##              elif nodes[n][0]=='is not':
-##              elif nodes[n][0]=='in':
-##              elif nodes[n][0]=='not in':
-##              else:
-##                  print '%g: comparision %s is not supported while.' % (node.lineno, node.op)
-##                  self.errors += 1
-##                    
-##            self.pop()
+## not tested! use with caution!
+        elif isinstance(node, Compare):
+            if len(node.expr.ops) != 1:
+                self.say('Currently multiple comparisions are not supported', node.lineno)
+            buf = self.push()
+            nodes=node.expr.ops
+##            if nodes[0][0]=='<':
+##                self.convert(node.expr)
+##                self.app('movwf', buf)
+##                self.convert(nodes[0][1])
+##                self.app('subwf', buf, 'w')
+##                self.app('bcf', 'STATUS', 'Z')
+##                #skip if -(node.expr - nodes[0][1]) > 0 (C=1) ->
+##                #     if node.expr < nodes[0][1] =>
+##                #     true(Z=0)
+##                #if node.expr >= nodes[0][1] ->
+##                #   -(node.expr - nodes[0][1]) <= 0 (C=0) =>
+##                #     true(Z=0)
+##                self.app('btfss', 'STATUS', 'C')
+##                self.app('bsf', 'STATUS', 'Z')
+##            elif nodes[0][0]=='>':
+##                self.convert(nodes[0][1])
+##                self.app('movwf', buf)
+##                self.convert(node.expr)
+##                self.app('subwf', buf, 'w')
+##                self.app('bsf', 'STATUS', 'Z')
+##                #skip if -(nodes[0][1] - node.expr) > 0 (C=1) ->
+##                #     if nodes[0][1] < node.expr =>
+##                #     true(Z=0)
+##                #if nodes[0][1] >= node.expr ->
+##                #   -(nodes[0][1] - node.expr) <= 0 (C=0) =>
+##                #     true(Z=0)
+##                self.app('btfss', 'STATUS', 'C')
+##                self.app('bcf', 'STATUS', 'Z')
+##            el
+            if nodes[0][0]=='==':
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w')
+                self.app('comf', buf, 'w')
+##            elif nodes[0][0]=='<=':
+##                self.convert(nodes[0][1])
+##                self.app('movwf', buf)
+##                self.convert(node.expr)
+##                self.app('subwf', buf, 'w')
+##                self.app('bcf', 'STATUS', 'Z')
+##                #skip if -(nodes[0][1] - node.expr) > 0 (C=1) ->
+##                #     if node.expr < nodes[0][1] =>
+##                #     false(Z=1)
+##                #if node.expr == nodes[0][1] ->
+##                #   +(node.expr - nodes[0][1]) >= 0 (C=0) =>
+##                #     true(Z=0)
+##                self.app('btfss', 'STATUS', 'C')
+##                self.app('bsf', 'STATUS', 'Z')
+##            elif nodes[0][0]=='>=':
+            elif nodes[0][0]=='!=':
+                self.convert(node.expr)
+                self.app('movwf', buf)
+                self.convert(nodes[0][1])
+                self.app('subwf', buf, 'w')
+##            elif nodes[0][0]=='is':
+##            elif nodes[0][0]=='is not':
+##            elif nodes[0][0]=='in':
+##            elif nodes[0][0]=='not in':
+            else:
+                self.say('comparision %s is not supported while.' % node.op, node.lineno)
+                    
+            self.pop()
         elif isinstance(node, Const):
             self.app('movlw', self.formatConst(node.value))
             buf=self.push()
@@ -274,7 +319,6 @@ class tree2asm:
 ##      elif isinstance(node, Ellipsis):
 ##      elif isinstance(node, Exec):
         elif isinstance(node, For):
-            #!!! continue in for is currently broken !!!
             if not (isinstance(node.list, CallFunc) and
                     isinstance(node.list.node, Name) and
                     node.list.node.name=='xrange' and
@@ -284,6 +328,8 @@ class tree2asm:
                 self.say('only "for <var> in xrange(<from>, <to>)" for statement is supported while', node.lineno)
                 return
             cntr = node.assign.name
+            if cntr not in self.hdikt:
+                cntr = '_'+cntr
             self.convert(Assign([node.assign], node.list.args[0]))
             limit = self.push()
             self.convert(node.list.args[1])
@@ -291,23 +337,26 @@ class tree2asm:
             
             lbl_beg=self.getLabel()
             lbl_else=self.getLabel()
+            lbl_cont=self.getLabel()
             if node.else_ != None:
                 lbl_end=self.getLabel()
             else:
                 lbl_end=lbl_else
-            self.lbl_stack.append((lbl_beg, lbl_else, lbl_end))
+            self.lbl_stack.append((lbl_cont, lbl_end))
             self.app('\n%s' % lbl_beg, verbatim=1)
             
             self.app('movf', limit, 'w')
             self.app('subwf', cntr, 'w')
             self.app('btfsc', 'STATUS', 'Z')
             self.app('goto', lbl_end)
-            self.app('btfss', 'STATUS', 'C')
+            self.app('btfsc', 'STATUS', 'C') #skip if cntr - limit <= 0
             self.app('goto', lbl_else)
             
             self.convert(node.body)
             
-            self.app('incf', cntr)
+            self.app('\n%s' % lbl_cont, verbatim=1)
+            
+            self.app('incf', cntr, 'f')
             self.app('goto', lbl_beg)
             
             if node.else_ != None:
@@ -443,7 +492,6 @@ class tree2asm:
                 self.convert(node.value)
             self.app('return')
         elif isinstance(node, RightShift):
-##            buf=self.push()
             if isinstance(node.right, Const) and self.formatConst(node.right.value)!=-1 and (node.right.value < 8 or self.op_speed):
                 buf=self.push()
                 self.convert(node.left)
@@ -480,7 +528,7 @@ class tree2asm:
                 lbl_end=self.getLabel()
             else:
                 lbl_end=lbl_else
-            self.lbl_stack.append((lbl_beg, lbl_else, lbl_end))
+            self.lbl_stack.append((lbl_beg, lbl_end))
             self.app('\n%s' % lbl_beg, verbatim=1)
             self.convert(node.test)
             self.app('btfsc', 'STATUS', 'Z')
@@ -497,12 +545,12 @@ class tree2asm:
             self.say('"%s" node is not supported while.' % node.__class__.__name__, node.lineno)
             
     def formatConst(self, c):
-        if type(c) == types.IntType and 0 <= int(c) < 0xff:
+        if type(c) == types.IntType and 0 <= int(c) <= 0xff:
             return hex(c)
         elif type(c) == types.StringType and len(c)==1:
             return "'%s'" % c
         else:
-            self.say('%s type constant is not supported while.' % node.c.__class__.__name__)
+            self.say('%s type constant is not supported while.' % c.__class__.__name__)
             return c
             
     def push(self):
@@ -545,7 +593,6 @@ class tree2asm:
             self.say("name %s is defined twice!" % name, level=self.warning)
 
     def free(self, name, care=1):
-        print self.dikt
         if name in self.dikt:
             self.cvar.insert(0, self.dikt[name])
             del self.dikt[name]
