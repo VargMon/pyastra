@@ -53,6 +53,7 @@ class tree2asm:
         self.pages = self.procmod.pages
         self.banks = self.procmod.banks
         self.shareb = self.procmod.shareb
+        self.maxram = self.procmod.maxram
         self.say = say
         
         self.max_ram=0
@@ -72,20 +73,23 @@ class tree2asm:
         
         if self.ICD:
             self.body+='\tnop\n'
-        
-        self.body+="""
+
+        if self.pages[0][0]>0:
+            self.body+="""
 \tgoto\tmain
 
 \torg\t%s
 main
 """ % hex(self.pages[0][0])
+            self.instr = 2
+        else:
+            self.instr = 1
         
         if self.ICD:
             self.cvar=[0x21]
-            self.instr=3
+            self.instr += 1
         else:
             self.cvar=[0x20]
-            self.instr=2
             
         self._convert(From('builtins', [('*', None)]))
         self.asm=0
@@ -709,7 +713,7 @@ main
                     elif i[0] > self.cvar:
                         self.cvar=i[0]
                 if self.cvar[0] > self.banks[-1][1]:
-                    self.say("program does not fit RAM.", exit_status=3)
+                    self.say("program does not fit RAM.", level=self.warning)
         elif care:
             self.say("name %s is defined twice!" % name, level=self.warning)
 
@@ -727,7 +731,7 @@ main
             self.bank_sel(self.hdikt[name] >> 7 << 7)
             
     def bank_sel(self, bank):
-        if self.banks[-1][1] < 0x80:
+        if self.maxram < 0x80 or (not 'RP0' in self.hdikt):
             return
         
         if bank and 1:
@@ -735,7 +739,7 @@ main
         else:
             self.body += '\tbcf\tSTATUS,\tRP0\n'
             
-        if self.banks[-1][1] < 0xff:
+        if self.maxram < 0x100 or (not 'RP1' in self.hdikt):
             return
         
         if bank and 2:
