@@ -26,8 +26,14 @@
 ############################################################################
 
 from distutils.core import setup
+import sys
 VERSION='0.0.2'
 
+# patch distutils if it can't cope with the "classifiers" keyword
+if sys.version < '2.2.3':
+    from distutils.dist import DistributionMetadata
+    DistributionMetadata.classifiers = None
+    
 setup(name='Pyastra',
       version=VERSION,
       description='PYthon to ASsembler TRAnslator',
