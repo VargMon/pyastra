@@ -265,7 +265,7 @@ main
                 if node.op == '+=':
                     self._convert(node.expr)
                     self.app('addwf', node.node.name, 'f')
-                if node.op == '-=':
+                elif node.op == '-=':
                     self._convert(node.expr)
                     self.app('subwf', node.node.name, 'f')
                 elif node.op == '*=':
