@@ -97,7 +97,9 @@ class tree2asm:
 
         self.cvar=mem(self.procmod.banks)
         if self.ICD:
-            self.cvar[0].reserve_byte()
+            self.cvar.reserve_byte(0x70)
+            for addr in xrange (0x1eb, 0x1f0):
+                self.cvar.reserve_byte(addr)
             self.instr += 1
             
         self._convert(From('builtins', [('*', None)]))
