@@ -48,6 +48,7 @@ class tree2asm:
     warning='Warning'
     message='Message'
     ram_usage=0
+    infunc=0
     
     def __init__(self, ICD=0, op_speed=0):
         self.ICD=ICD
@@ -206,7 +207,7 @@ class tree2asm:
             for n in node.nodes[1:-1]:
                 self.convert(n)
                 self.app('iorwf', buf, 'f')
-            self.convert(n)
+            self.convert(node.nodes[-1])
             self.app('iorwf', buf, 'w')
             self.pop()
         elif isinstance(node, Bitxor):
@@ -216,15 +217,12 @@ class tree2asm:
             for n in node.nodes[1:-1]:
                 self.convert(n)
                 self.app('xorwf', buf, 'f')
-            self.convert(n)
+            self.convert(node.nodes[-1])
             self.app('xorwf', buf, 'w')
             self.pop()
         elif isinstance(node, Break):
             self.app('goto', self.lbl_stack[-1][1])
         elif isinstance(node, CallFunc):
-            if isinstance(node.node, Getattr):
-                print node
-                
             if node.star_args or node.dstar_args:
                 self.say('*-args and **-args are not supported while')
                 
@@ -250,6 +248,20 @@ class tree2asm:
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
                 self.app('goto', '$')
+            elif node.node.name == 'fbin':
+                if len(node.args) != 1 or not isinstance(node.args[0], Const) or not isinstance(node.args[0].value, str):
+                    self.say('fbin(\'0101 0101\') function takes only one argument: binary number', exit_status=2)
+                
+                val=0
+                for i in node.args[0].value:
+                    if i != ' ':
+                        val=val << 1
+                        if i == '1':
+                            val+=int(i)
+                        elif i != '0':
+                            self.say('fbin(\'0101 0101\') function takes only one argument: binary number', exit_status=2)
+                    
+                self.convert(Const(val))
             else:
                 if node.node.name not in self.funcs:
                     self.say('function %s is not defined before call (this is not supported while)' % node.node.name, node.lineno, exit_status=1)
@@ -432,6 +444,7 @@ class tree2asm:
                 
             self.tbody=self.body
             self.tinstr=self.instr
+            self.infunc=1
             self.body='\n;\n; * Function %s *\n;\n' % node.name
             self.instr=0
             self.app('func_%s\n' % node.name, verbatim=1)
@@ -441,6 +454,7 @@ class tree2asm:
                 self.app('return')
                 
             self.app(';\n; * End of function %s *\n;' % node.name, verbatim=1)
+            self.infunc=0
             self.funcs[node.name]=[node.argnames, self.body, self.instr, used, self.head]
             self.instr=self.tinstr
             self.body=self.tbody
@@ -616,8 +630,7 @@ class tree2asm:
         return name
         
     def pop(self):
-        pass
-        #self.stack -= 1
+        self.stack -= 1
         #self.free('stack%g' % self.stack)
         
     def getLabel(self):
