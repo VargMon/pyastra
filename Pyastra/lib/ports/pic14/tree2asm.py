@@ -60,6 +60,7 @@ class tree2asm:
     interr = ''
     interr_instr = 0
     in_inter = 0
+    inter_ret=''
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -684,6 +685,7 @@ class tree2asm:
                     self.say('Selected processor does not support interrupts!', level=self.error, exit_status=1)
                 if not self.dikt.has_key('var_w_temp'):
                     self.say('Pyastra doesn\'t suppoort interrupts for selected processor while.', level=self.error, exit_status=1)
+                self.inter_ret=self.getLabel()
                 if self.interr:
                     self.say('One or more interrupt handlers already defined. New one is appendet to previous.', level=self.message)
                     self.body = []
@@ -708,6 +710,7 @@ class tree2asm:
                 
             self.prelast_bank = -1
             if node.name == 'on_interrupt':
+                self.app(self.inter_ret, verbatim=1)
                 self.app(';\n; * End of interrups handler *\n;', verbatim=1)
                 body_joined=''.join(self.body)
                 self.interr += body_joined
@@ -816,7 +819,7 @@ class tree2asm:
                     self._convert(node.value)
             
             if self.in_inter:
-                self.app('retfie')
+                self.app('goto', self.inter_ret)
             else:
                 self.app('return')
         elif isinstance(node, RightShift):
