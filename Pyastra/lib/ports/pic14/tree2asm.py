@@ -25,7 +25,7 @@
 ############################################################################
 
 #
-# FIXME: check weather builtins return correct Z flag (for cases) or they don't
+# FIXME: check whether builtins return correct Z flag (for cases) or they don't
 #        12f509, 16c505, 16c57, 16f57 may not work because they may have not
 #        7-bit based addressing.
 # TODO:
@@ -44,6 +44,7 @@ class tree2asm:
     stack=-1
     dikt={}
     bank_cmds=('addwf', 'andwf', 'bcf', 'bsf', 'btfsc', 'btfss', 'clrf', 'comf', 'decf', 'decfsz', 'incf', 'incfsz', 'iorwf', 'movf', 'movwf', 'rlf', 'rrf', 'subwf', 'swapf', 'xorwf')
+    pagesel_cmds=('call', 'goto')
     no_bank_cmds=('addlw', 'andlw', 'call', 'clrw', 'clrwdt', 'goto', 'iorlw', 'movlw', 'nop', 'retfie', 'retlw', 'return', 'sleep', 'sublw', 'xorlw')
     lbl_stack=[]
     label=-1
@@ -105,7 +106,7 @@ class tree2asm:
         self._convert(From('builtins', [('*', None)]))
         self.asm=0
         
-        addrs=None
+        addrs=[]
         if node.interrupts_on:
             for part in self.shareb:
                 #Check that part is not SFR
@@ -127,21 +128,22 @@ class tree2asm:
                     else:
                         break
                 
-                allocated=0
                 if in_banks_until == self.maxram >> 7:
                     for i in xrange(part[0][0], part[0][1]+1):
                         if not self.cvar.is_reserved(i):
                             addrs += [i]
-                            allocated += 1
-                            if allocated == 3:
+                            if len(addrs) == 5:
                                 break
-                    if allocated:
+                    if len(addrs) == 5:
                         break
-        if addrs:
+        if len(addrs)==5:
             self.malloc('var_w_temp', addr=addrs[0])
             self.malloc('var_status_temp', addr=addrs[1])
             self.malloc('var_pclath_temp', addr=addrs[2])
-        self.malloc('var_test')
+            self.malloc('var_test_temp', addr=addrs[3])
+            self.malloc('var_test', addr=addrs[4])
+        else:
+            self.malloc('var_test')
         
         self._convert(node)
         
@@ -158,6 +160,8 @@ class tree2asm:
 \tgoto\tmain\n"""]
             if self.interr_instr:
                 self.interr += """
+        movf    var_test_temp,      W
+        movwf   var_test
         movf    var_pclath_temp,    W
         movwf   PCLATH
         swapf   var_status_temp,    W
@@ -213,8 +217,9 @@ class tree2asm:
                 self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
                     self.del_last=0
-                    self.app('btfss', 'STATUS', 'Z')
+                    self.app('btfsc', 'STATUS', 'Z')
                     self.app('goto', end_lbl)
+            self.del_last=0
             self.app(end_lbl, verbatim=1)
 #       elif isinstance(node, AssAttr):
 #       elif isinstance(node, AssList):
@@ -229,7 +234,7 @@ class tree2asm:
 #            elif node.flags=='OP_DELETE':
 #                self.free('_'+node.name)
             else:
-                self.say('%s flag is not supported while.' % node.flags, node.lineno)
+                self.say('%s flag is not supported while.' % node.flags, self.lineno(node))
 #       elif isinstance(node, AssTuple):
 #       elif isinstance(node, Assert):
         elif isinstance(node, Assign):
@@ -254,7 +259,7 @@ class tree2asm:
                     self.app('clrf', name)
             elif any_sscr:
                 if not all_sscr:
-                    self.say('mixing bit and byte assign is not supported.', node.lineno)
+                    self.say('mixing bit and byte assign is not supported.', self.lineno(node))
                 elif isinstance(node.expr, Const):
                     if node.expr.value:
                         oper='bsf'
@@ -263,7 +268,7 @@ class tree2asm:
                         
                     for n in node.nodes:
                         if not isinstance(n.expr, Name):
-                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                            self.say('Bit assign may be applied to bytes only.', self.lineno(node))
                         else:
                             name=n.expr.name
                             if name not in self.hdikt:
@@ -291,7 +296,7 @@ class tree2asm:
                     self.app('goto', lbl_else)
                     for n in node.nodes:
                         if not isinstance(n.expr, Name):
-                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                            self.say('Bit assign may be applied to bytes only.', self.lineno(node))
                         else:
                             name=n.expr.name
                             if name not in self.hdikt:
@@ -303,12 +308,12 @@ class tree2asm:
                                 elif isinstance(i, Name) and i.name in self.hdikt:
                                     self.app('bcf', name, str(i.name))
                                 else:
-                                    self.say('Only constant indices are supported while.', node.lineno)
+                                    self.say('Only constant indices are supported while.', self.lineno(node))
                     self.app('goto', lbl_exit)
                     self.app('\n%s' % lbl_else, verbatim=1)
                     for n in node.nodes:
                         if not isinstance(n.expr, Name):
-                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                            self.say('Bit assign may be applied to bytes only.', self.lineno(node))
                         else:
                             name=n.expr.name
                             if name not in self.hdikt:
@@ -320,7 +325,7 @@ class tree2asm:
                                 elif isinstance(i, Name) and i.name in self.hdikt:
                                     self.app('bsf', name, str(i.name))
                                 else:
-                                    self.say('Only constant indices are supported while.', node.lineno)
+                                    self.say('Only constant indices are supported while.', self.lineno(node))
                     self.app('\n%s' % lbl_exit, verbatim=1)
                 else:
                     self._convert(If([(node.expr,
@@ -333,13 +338,13 @@ class tree2asm:
                     self._convert(n)
         elif isinstance(node, AugAssign):
                 if not isinstance(node.node, Name):
-                    self.say('assign only to a variable is not supported while.', node.lineno)
+                    self.say('assign only to a variable is not supported while.', self.lineno(node))
 
                 name=node.node.name
                 if '_'+name in self.dikt:
                     name = '_'+name
                 elif name not in self.hdikt:
-                    self.say('variable %s not initialized' % name, node.lineno)
+                    self.say('variable %s not initialized' % name, self.lineno(node))
                     
                 if node.op == '+=':
                     self._convert(node.expr)
@@ -375,7 +380,7 @@ class tree2asm:
                     self._convert(node.expr)
                     self.app('iorwf', name, 'f')
                 else:
-                    self.say('augmented assign %s is not supported while.' % node.op, node.lineno)
+                    self.say('augmented assign %s is not supported while.' % node.op, self.lineno(node))
                     
 #      elif isinstance(node, Backquote):
         elif isinstance(node, Bitand):
@@ -440,7 +445,7 @@ class tree2asm:
                             if s[0].isspace():
                                 self.say('Can\'t parse line in asm function: %s' % s, level=self.warning)
                                 self.asm=1
-                                self.curr_bank=-1
+                                self.last_bank = self.prelast_bank = self.curr_bank=-1
 
                             self.app(s, verbatim=1)
                         else:
@@ -476,7 +481,7 @@ class tree2asm:
                     self.app('\n; -- Verbatim inclusion:\n%s\n; -- End of verbatim inclusion\n' % node.args[0].value, verbatim=1)
                     self.instr += node.args[1].value
                     self.asm=1
-                    self.curr_bank = -1
+                    self.last_bank = self.prelast_bank = self.curr_bank = -1
             elif node.node.name == 'halt':
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
@@ -502,7 +507,7 @@ class tree2asm:
                 self._convert(Const(val))
             else:
                 if node.node.name not in self.funcs:
-                    self.say('function %s is not defined before call (this is not supported while)' % node.node.name, node.lineno, exit_status=1)
+                    self.say('function %s is not defined before call (this is not supported while)' % node.node.name, self.lineno(node), exit_status=1)
                     args=[]
                     self.funcs[node.node.name]=[node.args, None, None, 1, '']
                 else:
@@ -520,7 +525,7 @@ class tree2asm:
 ##      elif isinstance(node, Class):
         elif isinstance(node, Compare):
             if len(node.ops) != 1:
-                self.say('Currently multiple comparisions are not supported', node.lineno)
+                self.say('Currently multiple comparisions are not supported', self.lineno(node))
             buf = self.push()
             nodes=node.ops
             if nodes[0][0]=='<':
@@ -589,7 +594,7 @@ class tree2asm:
 ##            elif nodes[0][0]=='in':
 ##            elif nodes[0][0]=='not in':
             else:
-                self.say('comparision %s is not supported while.' % node.op, node.lineno)
+                self.say('comparision %s is not supported while.' % node.op, self.lineno(node))
                     
             self.pop()
         elif isinstance(node, Const):
@@ -599,7 +604,10 @@ class tree2asm:
             self.app('goto', self.lbl_stack[-1][0])
 ##      elif isinstance(node, Dict):
         elif isinstance(node, Discard):
-            self._convert(node.expr)
+            if isinstance(node.expr, Const) and node.expr.value==None:
+                return
+            else:
+                self._convert(node.expr)
         elif isinstance(node, Div):
             self._convert(Discard(CallFunc(Name('div'), [node.left, node.right], None, None)))
 ##      elif isinstance(node, Ellipsis):
@@ -611,7 +619,7 @@ class tree2asm:
                     len(node.list.args)==2 and
                     node.list.star_args==None and
                     node.list.dstar_args==None):
-                self.say('only "for <var> in xrange(<from>, <to>)" for statement is supported while', node.lineno)
+                self.say('only "for <var> in xrange(<from>, <to>)" for statement is supported while', self.lineno(node))
                 return
             cntr = node.assign.name
             if cntr not in self.hdikt:
@@ -654,7 +662,7 @@ class tree2asm:
             del self.lbl_stack[-1]
         elif isinstance(node, From):
             if node.names != [('*', None)]:
-                self.say('only "from <module_name> import *" input statement is supported while', node.lineno)
+                self.say('only "from <module_name> import *" input statement is supported while', self.lineno(node))
                 return
             name='%s.py' % node.modname
             if not os.path.exists(name):
@@ -707,12 +715,17 @@ class tree2asm:
         movwf   var_status_temp
         movf    PCLATH, W
         movwf   var_pclath_temp
+        movf    var_test, W
+        movwf   var_test_temp
+        bcf     PCLATH, 3
+        bcf     PCLATH, 4
         """]
                 self.body += ['\n;\n; * Interrupts handler *\n;\n']
+                self.instr = 9
             else:
                 self.body=['\n;\n; * Function %s *\n;\n' % node.name]
                 self.app('func_%s\n' % node.name, verbatim=1)
-            self.instr=0
+                self.instr=0
             self._convert(node.code)
             
             if not isinstance(node.code.nodes[-1], Return) and node.name != 'on_interrupt':
@@ -790,7 +803,7 @@ class tree2asm:
             elif node.name in self.hdikt:
                 self.app('movf', node.name, 'w')
             else:
-                self.say('variable %s not initialized' % node.name, node.lineno)
+                self.say('variable %s not initialized' % node.name, self.lineno(node))
         elif isinstance(node, Not):
             lbl1=self.getLabel()
             lbl_end=self.getLabel()
@@ -810,8 +823,9 @@ class tree2asm:
                 self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
                     self.del_last=0
-                    self.app('btfsc', 'STATUS', 'Z')
+                    self.app('btfss', 'STATUS', 'Z')
                     self.app('goto', lbl_end)
+            self.del_last=0
             self.app(lbl_end, verbatim=1)
         elif isinstance(node, Pass):
             #self.app('nop')
@@ -827,6 +841,7 @@ class tree2asm:
                     self.say('Interrupt handler can not return any values! Ignoring...', level=self.warning)
                 else:
                     self._convert(node.value)
+                    self.del_last = 0
             
             if self.in_inter:
                 self.app('goto', self.inter_ret)
@@ -857,11 +872,11 @@ class tree2asm:
             self.pop()
         elif isinstance(node, Subscript):
             if not isinstance(node.expr, Name):
-                self.say('Bit assign may be applied to bytes only.', node.lineno)
+                self.say('Bit assign may be applied to bytes only.', self.lineno(node))
             elif len(node.subs) != 1:
-                self.say('More than one subscripts are not fully supported while.', node.lineno)
+                self.say('More than one subscripts are not fully supported while.', self.lineno(node))
             elif not node.flags=='OP_APPLY':
-                self.say('Unsupported flag: %s.' % node.flags, node.lineno)
+                self.say('Unsupported flag: %s.' % node.flags, self.lineno(node))
             else:
                 name=node.expr.name
                 if name in self.hdikt:
@@ -881,7 +896,7 @@ class tree2asm:
                     else:
                         self._convert(Bitand([node.expr, LeftShift((Const(1), node.subs[0]))]))
                 else:
-                    self.say('Only constant indices are supported while.', node.lineno)
+                    self.say('Only constant indices are supported while.', self.lineno(node))
                 self.test()
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
@@ -911,7 +926,7 @@ class tree2asm:
             del self.lbl_stack[-1]
 #       elif isinstance(node, Yield):
         else:
-            self.say('"%s" node is not supported while.' % node.__class__.__name__, node.lineno)
+            self.say('"%s" node is not supported while.' % node.__class__.__name__, self.lineno(node))
             
     def formatConst(self, c):
         if type(c) == types.IntType and 0 <= int(c) <= 0xff:
@@ -921,6 +936,12 @@ class tree2asm:
         else:
             self.say('%s type constant is not supported while.' % c.__class__.__name__)
             return c
+
+    def lineno(self, node):
+        if hasattr(node, 'lineno'):
+            return node.lineno
+        else:
+            return None
             
     def push(self):
         self.stack += 1
@@ -996,6 +1017,8 @@ class tree2asm:
                         curr_block_has = 1
                 
                 if addr_in_block and curr_block_has:
+                    self.prelast_bank=self.last_bank
+                    self.last_bank=self.curr_bank
                     return ''
         else:
             for block in self.shareb:
@@ -1011,6 +1034,8 @@ class tree2asm:
                 
                 if addr_in_block:
                     if curr_block_has:
+                        self.prelast_bank=self.last_bank
+                        self.last_bank=self.curr_bank
                         return ''
                     else:
                         break
@@ -1038,13 +1063,15 @@ class tree2asm:
         self.app('movwf', 'var_test')
         self.app('movf', 'var_test', 'f')
         self.del_last=1
-        
+
+    #ve=0
     def app(self, cmd='', op1=None, op2=None, verbatim=0, comment=''):
         if self.del_last:
             del self.body[-2:]
             self.del_last=0
             self.curr_bank=self.prelast_bank
             self.instr = self.prelast_instr
+            self.prelast_bank=self.last_bank = -1
 
         self.prelast_instr=self.last_instr
         self.last_instr=self.instr
@@ -1054,11 +1081,19 @@ class tree2asm:
                 if line:
                     s=line.split()
                     if s and s[0] != ';':
-                        self.curr_bank = -1
+                        self.last_bank = self.prelast_bank = self.curr_bank = -1
                         break
-                
+##        if self.ve:
+##            print '%s %s, %s: %i %i %i' % (cmd, op1, op2, self.curr_bank, self.last_bank, self.prelast_bank),
+##        if (cmd, op1) == ('clrf', 'PIE2'):
+##            print '*****->'
+##            self.ve=1
+##        if (cmd, op1) == ('movf', '_CLOCK_OSC8'):
+##            print '*****<-'
+##            self.ve=0
+        
         if cmd=='call':
-            self.curr_bank=-1
+            self.last_bank = self.prelast_bank = self.curr_bank=-1
             
         if verbatim:
             self.body += ['%s\n' % (cmd,)]
@@ -1068,7 +1103,20 @@ class tree2asm:
         if comment:
             comment='\t;%s' % comment
         if op1 and (cmd not in self.no_bank_cmds):
+##            if self.ve:
+##                print '###',
             bodys += self.bank_by_name(op1)
+
+##        if self.ve:
+##            print self.curr_bank, self.last_bank, self.prelast_bank
+        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+            #has_dollar=0
+            #for ch in op1:
+            #    if ch=='$':
+            #        has_dollar=1
+            #        break
+            #if not has_dollar:
+                bodys += '\tpagesel %s\n' % op1
             
         if op2 != None:
             bodys += '\t%s\t%s,\t%s' % (cmd, op1, op2)
@@ -1077,11 +1125,15 @@ class tree2asm:
         else:
             bodys += '\t%s' % (cmd,)
         self.instr += 1
+        
+        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+            bodys += '\n\tpagesel $+1'
+            self.instr += 2
 
         self.body += [bodys+comment+'\n']
 
-        if self.instr == self.pages[0][1]:
-            self.say('Program does not fit ROM (maybe because while only first ROM page is supported).')
+#        if self.instr == self.pages[0][1]:
+#            self.say('Program does not fit ROM (maybe because while only first ROM page is supported).')
             
     def get_asm(self):
         return ''.join([self.head] + self.body + [self.tail])
