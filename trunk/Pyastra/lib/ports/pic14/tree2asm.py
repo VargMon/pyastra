@@ -26,6 +26,8 @@
 
 #
 # FIXME: check weather builtins return correct Z flag (for cases) or they don't
+#        12f509, 16c505, 16c57, 16f57 may not work because they may have not
+#        7-bit based addressing.
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
@@ -805,18 +807,35 @@ main
 
     def bank_by_name(self, name):
         if name in self.dikt:
-            return self.bank_sel(self.dikt[name] >> 7)
+            addr = self.dikt[name]
         elif name in self.hdikt:
-            return self.bank_sel(self.hdikt[name] >> 7)
+            addr = self.hdikt[name]
         else:
             return ''
-            
-    def bank_sel(self, bank):
+
+        bank = addr >> 7
+        addr7 = addr & 0x7f
+
         if self.maxram < 0x80 or (not 'RP0' in self.hdikt):
             return ''
         
         ret=''
         
+        if self.curr_bank != -1:
+            for block in self.shareb:
+                addr_in_block = 0
+                curr_block_has = 0
+            
+                for sub in block:
+                    if sub[0] < addr < sub[1]:
+                        addr_in_block = 1
+                    
+                    if sub[0] < addr7 | (sub[0] >> 7 << 7) < sub[1]:
+                        curr_block_has = 1
+                
+                if addr_in_block & curr_block_has:
+                    return ''
+            
         if self.curr_bank==-1 or ((bank & 1) ^ (self.curr_bank & 1)):
             if bank & 1:
                 ret += '\tbsf\tSTATUS,\tRP0\n'
