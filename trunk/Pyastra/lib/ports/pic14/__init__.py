@@ -1,7 +1,7 @@
 ############################################################################
 # $Id$
 #
-# Description: Pyastra module. Pyastra project.
+# Description: pic14 port. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
@@ -24,4 +24,4 @@
 #
 ############################################################################
 
-__all__ = ['p16f877', 'regs16f877', 'tree2asm', 'tree2tree']
+__all__ = ['builtins', 'tree2asm', 'procs']

@@ -37,14 +37,12 @@
 # halt - halt the system
 #
 
-import sys, os.path, compiler, getopt
-from pyastra.tree2asm import tree2asm
+import sys, os.path, compiler, getopt, pyastra.ports.pic14.procs
+from pyastra.ports.pic14.tree2asm import tree2asm
 from pyastra.tree2tree import tree2tree
 #from getopt import getopt
 
 NFO='pyastra 0.0.1'
-PROC='16f877'
-procs=('16f877',)
 ports=('pic14',)
 ICD = 0
 #
@@ -59,17 +57,19 @@ pyastra [options] infile [outfile]
 
 Options:
   -m              Set the port to use (default: -m%s)
+  -mlist          List available ports
   -p              Select port specific processor (default: -m%s -p%s)
+  -plist          List supported port specific processors
       --icd       Enable ICD support (disabled by default)
       --op-speed  Optimize for speed (for code size by default)
   -h, --help      Show this usage message and exit
-
-Supported ports: %s
-          processors: %s
-""" % (NFO, ports[0], ports[0], procs[0], str(ports)[1:-1], str(procs)[1:-1])
+""" % (NFO, ports[0], ports[0], procs[0], )
     sys.exit(4)
 
 print
+
+procs=pyastra.ports.pic14.procs.__all__
+PROC=procs[0]
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'hm:p:', ['help', 'icd', 'op-speed',])
@@ -85,13 +85,19 @@ for o, a in opts:
     elif o=='--idc':
         ICD = 1
     elif o=='-m':
-        if a!='pic14':
+        if a=='list':
+            print 'Available ports: %s' % str(ports)
+            sys.exit(0)
+        elif a!='pic14':
             print """Curent version supports pic14 (Microchip PIC16*) only.
 Please submit feature request if that port is not already in TODO:
 http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
             sys.exit(4)
     elif o=='-p':
-        if a in procs:
+        if a=='list':
+            print 'Supported %s-port specific processors: %s' % (ports[0], str(procs))
+            sys.exit(0)
+        elif a in procs:
             PROC=a
         else:
             print """%s processor is not supported by the current version.
@@ -103,12 +109,12 @@ http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
 if not args:
     usage()
 
-root=compiler.parseFile(sys.argv[1])
+root=compiler.parseFile(args[0])
 
-if len(sys.argv) == 2:
-    out_name=os.path.splitext(sys.argv[1])[0]+'.asm'
+if len(args) == 1:
+    out_name=os.path.splitext(args[0])[0]+'.asm'
 else:
-    out_name=sys.argv[2]
+    out_name=args[1]
 
 op=tree2tree(root)
 p=tree2asm(ICD, op_speed, PROC)
