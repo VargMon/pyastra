@@ -176,9 +176,7 @@ main
             elif any_sscr:
                 if not all_sscr:
                     self.say('mixing bit and byte assign is not supported.', node.lineno)
-                elif not isinstance(node.expr, Const):
-                    self.say('Bits are noted by constants only (0 for 0, other for 1).', node.lineno)
-                else:
+                elif isinstance(node.expr, Const):
                     if node.expr.value:
                         oper='bsf'
                     else:
@@ -199,6 +197,69 @@ main
                                     self.say('Only constant indices are supported while.', node.lineno)
                                 else:
                                     self.app(oper, name, str(i.value))
+                elif isinstance(node.expr, Subscript):
+##                    if len(node.nodes)==1 and len(node.nodes[0].subs)==1 and len(node.nodes[0].subs)==1 and isinstance(node.nodes[0].subs[0], Const) and isinstance(node.nodes[0].expr, Name) and isinstance(node.nodes[0].expr, Name) and (node.nodes[0].expr.name not in self.hdikt):
+##                        name=node.nodes[0].expr.name
+##                        if name in self.hdikt:
+##                            pass
+##                        else:
+##                            name='_'+name
+##                            self.malloc(name)
+##                        ename=node.expr.expr.name
+##                        etest=1
+##                        if '_'+ename in self.dikt:
+##                            ename='_'+ename
+##                        elif ename not in self.hdikt:
+##                            self.say('variable %s not initialized' % ename, node.lineno)
+##                            etest=0
+##                            
+##                        if etest:
+##                            self.app('bcf', name, str(node.nodes[0].subs[0].value))
+##                            self.app('btfsc', ename, str(node.expr.subs[0].value))
+##                            self.app('bsf', name, str(node.nodes[0].subs[0].value))
+##                    
+                    lbl_else=self.getLabel()
+                    lbl_exit=self.getLabel()
+
+                    if len(node.expr.subs) != 1:
+                        self.say('Only constant index is supported while.', node.lineno)
+                    ename=node.expr.expr.name
+                    if ename not in self.hdikt:
+                        ename='_'+ename
+                        self.malloc(ename)
+                    self.app('btfsc', ename, str(node.expr.subs[0].value))
+                    self.app('goto', lbl_else)
+                    for n in node.nodes:
+                        if not isinstance(n.expr, Name):
+                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                        else:
+                            name=n.expr.name
+                            if name not in self.hdikt:
+                                name='_'+name
+                                self.malloc(name)
+                            for i in n.subs:
+                                if not isinstance(i, Const):
+                                    self.say('Only constant indices are supported while.', node.lineno)
+                                else:
+                                    self.app('bcf', name, str(i.value))
+                    self.app('goto', lbl_exit)
+                    self.app('\n%s' % lbl_else, verbatim=1)
+                    for n in node.nodes:
+                        if not isinstance(n.expr, Name):
+                            self.say('Bit assign may be applied to bytes only.', node.lineno)
+                        else:
+                            name=n.expr.name
+                            if name not in self.hdikt:
+                                name='_'+name
+                                self.malloc(name)
+                            for i in n.subs:
+                                if not isinstance(i, Const):
+                                    self.say('Only constant indices are supported while.', node.lineno)
+                                else:
+                                    self.app('bsf', name, str(i.value))
+                    self.app('\n%s' % lbl_exit, verbatim=1)
+                else:
+                    self.say('Bits may be assigned to bits and constants only!', node.lineno)
             else:
                 self._convert(node.expr)
                 
