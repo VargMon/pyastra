@@ -135,6 +135,11 @@ def inc2py(inp, out, proc_name):
     out.write('hdikt={')
 
     b=b.items()
+    b0=map(lambda it: it[0], b)
+    for i in ('RP0', 'RP1', 'STATUS', 'Z', 'C'):
+        if i not in b0:
+            print 'FIXME: %s doesn\'t have register or bit %s' % ( proc_name, i)
+        
     for i in xrange(len(b)/3):
         if i:
             out.write('       ')
@@ -198,12 +203,27 @@ def lkr2py(inp, out, proc_name):
                     lmn += 1
             else:
                 buf[lmn] += ch
-                
+
+    for i in shareb.iterkeys():
+        new=1
+        for j in shareb[i]:
+            for k in banks:
+                if j[0]==k[0] and j[1]==k[1]:
+                    new=0
+                elif k[0] <= j[0] <= k[1] or k[0] <= j[1] <= k[1]:
+                    print "FIXME: proc %s: some of shared banks are subsequences of banks or vice versa" % proc_name
+        if new:
+            banks.append(shareb[i][0])
+
+    cmp0 = lambda x,y: cmp(eval(x[0]), eval(y[0]))
+    
+    pages.sort(cmp0)
     out.write('\npages=(')
     for i in pages:
         out.write('(%s, %s), ' % (i[0], i[1]))
     out.write(')\n')
                 
+    banks.sort(cmp0)
     out.write('\nbanks=(')
     for i in banks:
         out.write('(%s, %s), ' % (i[0], i[1]))

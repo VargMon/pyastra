@@ -9,16 +9,76 @@
 <body>
 <h1>Pyastra README</h1>
 To start use a command:<br>
-<pre>python pyastra.py infile [outfile]</pre>
+<pre>pyastra [options] infile [outfile]</pre>
 Where infile is the python file you would like to compile. Outfile is
 the assembler output file. If no outfile is given, then the name would
 be selected automatically (e.g. test.py -&gt; test.asm)<br>
+<br>
+Options are:<br>
+<table
+ style="text-align: left; width: 100%; border-collapse: collapse; margin-left: auto; margin-right: auto;"
+ border="1">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">-m</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Set the port to use (default:
+-mpic14)</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-mlist</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">List available ports</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-p</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Select port specific processor
+(default: -mpic14 -p16f877a)</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-plist</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">List supported port specific
+processors</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">--icd</td>
+      <td style="vertical-align: top;">Enable ICD support (disabled by
+default)</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">--op-speed</td>
+      <td style="vertical-align: top;">Optimize for speed (for code
+size by default)</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-h</td>
+      <td style="vertical-align: top;">--help</td>
+      <td style="vertical-align: top;">Show this usage message </td>
+    </tr>
+  </tbody>
+</table>
 <br>
 Current versions are very unstable. Some code may be generated
 incorrectly. So you shouldn't use it in critical tasks! If you'll find
 a bug please submit it on <br>
 <a
  href="https://sourceforge.net/tracker/?atid=643744&amp;group_id=106265&amp;func=browse">https://sourceforge.net/tracker/?atid=643744&amp;group_id=106265&amp;func=browse</a><br>
+<br>
+If it really works, please inform me for which microcontroller did you
+used Pyastra and other thigs that may be important:<br>
+<a
+ href="mailto:estyler%20%28at%29%20users%20%28dot%29%20sourceforge%20%28dot%29%20net">estyler
+(at) users (dot) sourceforge (dot) net</a><br>
 <br>
 <h2>Syntax notes</h2>
 Syntax is planned as 100% standard python compatible (see <a
