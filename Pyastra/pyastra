@@ -38,8 +38,8 @@
 #
 
 import sys, os.path, compiler
-from tree2asm import tree2asm
-from tree2tree import tree2tree
+from pyastra.tree2asm import tree2asm
+from pyastra.tree2tree import tree2tree
 #from getopt import getopt
 
 NFO='pyastra 0.0.1'
