@@ -61,6 +61,8 @@ class tree2asm:
     interr_instr = 0
     in_inter = 0
     inter_ret=''
+    last_instr=0
+    prelast_instr=0
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -90,13 +92,16 @@ class tree2asm:
 """ % (self.PROC, self.PROC)
         if self.pages[0][0]>0:
             self.instr = 2
+            print '=2'
         else:
             self.instr = 1
+            print '=1'
 
         self.cvar=mem(self.procmod.banks)
         if self.ICD:
             self.cvar[0].reserve_byte()
             self.instr += 1
+            print '+1'
             
         self._convert(From('builtins', [('*', None)]))
         self.asm=0
@@ -679,6 +684,7 @@ class tree2asm:
             self.curr_bank = -1
             self.last_bank = -1
             self.prelast_bank = -1
+            print 'function %s' % node.name
             if node.name == 'on_interrupt':
                 self.in_inter=1
                 if not self.vectors:
@@ -725,7 +731,7 @@ class tree2asm:
             self.last_bank=tlast_bank
             self.prelast_bank=tprelast_bank
             self.body=tbody
-            del tinstr, tbody
+            print 'end of function %s' % node.name
 #       elif isinstance(node, Getattr):
 #       elif isinstance(node, Global):
         elif isinstance(node, If):
@@ -1011,6 +1017,7 @@ class tree2asm:
             else:
                 ret += '\tbcf\tSTATUS,\tRP0\n'
             self.instr += 1
+            print 'bxf: +1'
            
         if self.curr_bank==-1 or (((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
             if bank & 2:
@@ -1018,6 +1025,7 @@ class tree2asm:
             else:
                 ret += '\tbcf\tSTATUS,\tRP1\n'
             self.instr += 1
+            print 'bxf: +1'
             
         self.prelast_bank=self.last_bank
         self.last_bank=self.curr_bank
@@ -1031,12 +1039,16 @@ class tree2asm:
         
     def app(self, cmd='', op1=None, op2=None, verbatim=0, comment=''):
         if self.del_last:
+            print self.body[-2:]
             del self.body[-2:]
             self.del_last=0
             self.curr_bank=self.prelast_bank
-            self.instr -= 2
+            self.instr = self.prelast_instr
+            print '%s: -2' % cmd
 
-        #FIXME: more intelligent verbatim code analyzing
+        self.prelast_instr=self.last_instr
+        self.last_instr=self.instr
+       #FIXME: more intelligent verbatim code analyzing
         if verbatim:
             for line in cmd.splitlines():
                 if line:
@@ -1065,6 +1077,8 @@ class tree2asm:
         else:
             bodys += '\t%s' % (cmd,)
         self.instr += 1
+        print '%s: +1' % cmd
+
         self.body += [bodys+comment+'\n']
 
         if self.instr == self.pages[0][1]:
