@@ -27,7 +27,7 @@
 
 from distutils.core import setup
 import sys
-VERSION='0.0.2'
+VERSION='0.0.3'
 
 # patch distutils if it can't cope with the "classifiers" keyword
 if sys.version < '2.2.3':
@@ -61,7 +61,7 @@ instruction set only. Its main goals are:
 (because it's fairly unfinished).*
 """,
       classifiers = [
-          'Development Status :: 2 - Pre-Alpha',
+          'Development Status :: 3 - Alpha',
           'Environment :: Console (Text Based)',
           'Intended Audience :: Developers',
           'Intended Audience :: Education',
