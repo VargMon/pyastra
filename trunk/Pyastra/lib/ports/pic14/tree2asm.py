@@ -24,6 +24,9 @@
 #
 ############################################################################
 
+#
+# FIXME: check weather builtins return correct Z flag (for cases) or they don't
+#
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
 from compiler.ast import *
@@ -44,6 +47,7 @@ class tree2asm:
     ram_usage=0
     infunc=0
     curr_bank=-1
+    del_last=0
     
     def __init__(self, ICD, op_speed, PROC, say):
         self.ICD=ICD
@@ -70,18 +74,18 @@ class tree2asm:
 \tprocessor\t%s
 \t#include\tp%s.inc
 """ % (self.PROC, self.PROC)
-        self.body='\n\torg\t0x0\n'
+        self.body=['\n\torg\t0x0\n']
         
         if self.ICD:
-            self.body+='\tnop\n'
+            self.body+=['\tnop\n']
 
         if self.pages[0][0]>0:
-            self.body+="""
+            self.body+=["""
 \tgoto\tmain
 
 \torg\t%s
 main
-""" % hex(self.pages[0][0])
+""" % hex(self.pages[0][0])]
             self.instr = 2
         else:
             self.instr = 1
@@ -100,7 +104,7 @@ main
         if self.ICD:
             self.ram_usage += 1
 
-        self.body += '\n\tgoto\t$\n'
+        self.body += ['\n\tgoto\t$\n']
             
         ftest=0
         self.tail=fbuf=''
@@ -135,6 +139,7 @@ main
             for n in xrange(len(node.nodes)):
                 self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
+                    self.del_last=0
                     self.app('btfss', 'STATUS', 'Z')
                     self.app('goto', end_lbl)
             self.app(end_lbl, verbatim=1)
@@ -346,6 +351,7 @@ main
                 self.app('; -- Verbatim inclusion:\n%s\n; -- End of verbatim inclusion\n' % node.args[0].value, verbatim=1)
                 self.instr += node.args[1].value
                 self.asm=1
+                self.curr_bank = -1
             elif node.node.name == 'halt':
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
@@ -461,6 +467,7 @@ main
             buf=self.push()
             self.app('movwf', buf)
             self.pop()
+            self.del_last=1
         elif isinstance(node, Continue):
             self.app('goto', self.lbl_stack[-1][0])
 ##      elif isinstance(node, Dict):
@@ -549,7 +556,7 @@ main
             self.tbody=self.body
             self.tinstr=self.instr
             self.infunc=1
-            self.body='\n;\n; * Function %s *\n;\n' % node.name
+            self.body=['\n;\n; * Function %s *\n;\n' % node.name]
             self.instr=0
             self.app('func_%s\n' % node.name, verbatim=1)
             self._convert(node.code)
@@ -559,7 +566,10 @@ main
                 
             self.app(';\n; * End of function %s *\n;' % node.name, verbatim=1)
             self.infunc=0
-            self.funcs[node.name]=[node.argnames, self.body, self.instr, used, self.head]
+            body_joined=''
+            for lmn in self.body:
+                body_joined+=lmn
+            self.funcs[node.name]=[node.argnames, body_joined, self.instr, used, self.head]
             self.instr=self.tinstr
             self.body=self.tbody
             del self.tinstr, self.tbody
@@ -571,6 +581,7 @@ main
             
             for n in node.tests:
                 self._convert(n[0])
+                self.del_last=0
                 label=self.getLabel()
                 self.app('btfsc', 'STATUS', 'Z')
                 self.app('goto', label)
@@ -621,6 +632,7 @@ main
             lbl1=self.getLabel()
             lbl_end=self.getLabel()
             self._convert(node.expr)
+            self.del_last=0
             self.app('btfsc', 'STATUS', 'Z')
             self.app('goto', lbl1)
             self.app('movlw', '0')
@@ -631,11 +643,13 @@ main
             buf=self.push()
             self.app('movwf', buf)
             self.pop()
+            self.del_last=1
         elif isinstance(node, Or):
             lbl_end=self.getLabel()
             for n in xrange(len(node.nodes)):
                 self._convert(node.nodes[n])
                 if n+1 != len(node.nodes):
+                    self.del_last=0
                     self.app('btfsc', 'STATUS', 'Z')
                     self.app('goto', lbl_end)
             self.app(lbl_end, verbatim=1)
@@ -704,6 +718,7 @@ main
                 buf=self.push()
                 self.app('movwf', buf)
                 self.pop()
+                self.del_last=1
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
@@ -720,6 +735,7 @@ main
             self.lbl_stack.append((lbl_beg, lbl_end))
             self.app('\n%s' % lbl_beg, verbatim=1)
             self._convert(node.test)
+            self.del_last=0
             self.app('btfsc', 'STATUS', 'Z')
             self.app('goto', '%s\n' % lbl_else)
             self._convert(node.body)
@@ -763,17 +779,18 @@ main
             if len(self.dikt) > self.ram_usage:
                 self.ram_usage=len(self.dikt)
                 
-            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(self.cvar[0] & 0x7f), self.cvar[0] >> 7 << 7)
+            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(self.cvar[0]), self.cvar[0] >> 7)
 
             if len(self.cvar) > 1:
                 del self.cvar[0]
             else:
                 self.cvar[0] += 1
                 for i in self.banks:
-                    if i[0] <= self.cvar <= i[1]:
+                    if i[0] <= self.cvar[0] <= i[1]:
                         break
-                    elif i[0] > self.cvar:
-                        self.cvar=i[0]
+                    elif i[0] > self.cvar[0]:
+                        self.cvar[0]=i[0]
+                        break
                 if self.cvar[0] > self.banks[-1][1]:
                     self.say("program does not fit RAM.", level=self.warning)
         elif care:
@@ -788,51 +805,68 @@ main
 
     def bank_by_name(self, name):
         if name in self.dikt:
-            self.bank_sel(self.dikt[name] >> 7)
+            return self.bank_sel(self.dikt[name] >> 7)
         elif name in self.hdikt:
-            self.bank_sel(self.hdikt[name] >> 7)
+            return self.bank_sel(self.hdikt[name] >> 7)
+        else:
+            return ''
             
     def bank_sel(self, bank):
         if self.maxram < 0x80 or (not 'RP0' in self.hdikt):
-            return
-
+            return ''
+        
+        ret=''
+        
         if (self.curr_bank==-1 or (bank & 1) ^ (self.curr_bank & 1)):
             if bank & 1:
-                self.body += '\tbsf\tSTATUS,\tRP0\n'
+                ret += '\tbsf\tSTATUS,\tRP0\n'
             else:
-                self.body += '\tbcf\tSTATUS,\tRP0\n'
+                ret += '\tbcf\tSTATUS,\tRP0\n'
             self.instr += 1
             
         if (self.curr_bank==-1 or ((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
             if bank & 2:
-                self.body += '\tbsf\tSTATUS,\tRP1\n'
+                ret += '\tbsf\tSTATUS,\tRP1\n'
             else:
-                self.body += '\tbcf\tSTATUS,\tRP1\n'
+                ret += '\tbcf\tSTATUS,\tRP1\n'
             self.instr += 1
             
+        self.last_bank=self.curr_bank
         self.curr_bank=bank
+        return ret
         
     def app(self, cmd='', op1=None, op2=None, verbatim=0):
-        if verbatim or cmd=='call':
+        if self.del_last:
+            del self.body[-1]
+            self.del_last=0
+            self.curr_bank=self.last_bank
+
+        #FIXME: more intelligent verbatim code analyzing
+        if cmd=='call' or (verbatim and not (cmd=='' or cmd[0]==';')):
             self.curr_bank=-1
             
         if verbatim:
-            self.body += '%s\n' % (cmd,)
+            self.body += ['%s\n' % (cmd,)]
             return
-        
+
+        bodys=''
         if op1 and (cmd not in self.no_bank_cmds):
-            self.bank_by_name(op1)
+            bodys += self.bank_by_name(op1)
             
         if op2 != None:
-            self.body += '\t%s\t%s,\t%s\n' % (cmd, op1, op2)
+            bodys += '\t%s\t%s,\t%s\n' % (cmd, op1, op2)
         elif op1 != None:
-            self.body += '\t%s\t%s\n' % (cmd, op1)
+            bodys += '\t%s\t%s\n' % (cmd, op1)
         else:
-            self.body += '\t%s\n' % (cmd,)
+            bodys += '\t%s\n' % (cmd,)
         self.instr += 1
+        self.body += [bodys]
 
         if self.instr == self.pages[0][1]:
             self.say('Program does not fit ROM (maybe because while only first ROM page is supported).')
             
     def get_asm(self):
-        return self.head + self.body + self.tail
+        body_joined=''
+        for lmn in self.body:
+            body_joined+=lmn
+        return self.head + body_joined + self.tail
