@@ -46,6 +46,7 @@ class tree2asm:
     bank_cmds=('addwf', 'andwf', 'bcf', 'bsf', 'btfsc', 'btfss', 'clrf', 'comf', 'decf', 'decfsz', 'incf', 'incfsz', 'iorwf', 'movf', 'movwf', 'rlf', 'rrf', 'subwf', 'swapf', 'xorwf')
     pagesel_cmds=('call', 'goto')
     no_bank_cmds=('addlw', 'andlw', 'call', 'clrw', 'clrwdt', 'goto', 'iorlw', 'movlw', 'nop', 'retfie', 'retlw', 'return', 'sleep', 'sublw', 'xorlw')
+    bank_indep=('STATUS', 'FSR', 'PCLATH', 'INTCON', 'PCL')
     lbl_stack=[]
     label=-1
     funcs={}
@@ -95,9 +96,9 @@ class tree2asm:
 
 """ % (proc_clean, proc_clean)
         if self.pages[0][0]>0:
-            self.instr = 2
-        else:
             self.instr = 1
+        else:
+            self.instr = 0
 
         self.cvar=mem(self.procmod.banks)
         if self.ICD:
@@ -174,7 +175,7 @@ class tree2asm:
         swapf   var_w_temp, F
         swapf   var_w_temp, W
         retfie\n"""
-                self.interr_instr += 12
+                self.interr_instr += 9
                 self.instr += self.interr_instr
                 body_buf += ["\n\torg\t%s\n" % hex(self.vectors[1]), self.interr]
             if self.pages[0][0] > self.vectors[1]+self.interr_instr:
@@ -187,6 +188,7 @@ class tree2asm:
             self.ram_usage += 1
 
         self.body += ['\n\tgoto\t$\n']
+        self.instr += 1
             
         ftest=0
         self.tail=fbuf=''
@@ -448,7 +450,7 @@ class tree2asm:
                             self.app(comment, verbatim=1)
                         elif len(op) > 3 or ((op[0] not in self.bank_cmds) and (op[0] not in self.no_bank_cmds)):
                             if s[0].isspace():
-                                self.say('Can\'t parse line in asm function: %s' % s, level=self.warning)
+                                self.say('Can\'t parse line in asm function:\n%s' % s, level=self.warning)
                                 self.asm=1
                                 self.last_bank = self.prelast_bank = self.curr_bank=-1
 
@@ -474,7 +476,7 @@ class tree2asm:
                 elif not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
                     self.say(err_mesg, exit_status=2)
                 else:
-                    self.app('\n\terrorlevel\t+302\n')
+                    self.app('\n\terrorlevel\t+302\n', verbatim=1)
                     if len(node.args) > 2:
                         if not isinstance(node.args[2], Tuple):
                             self.say(err_mesg, exit_status=2)
@@ -488,7 +490,7 @@ class tree2asm:
                     self.instr += node.args[1].value
                     self.asm=1
                     self.last_bank = self.prelast_bank = self.curr_bank = -1
-                    self.app('\n\terrorlevel\t-302\n')
+                    self.app('\n\terrorlevel\t-302\n', verbatim=1)
             elif node.node.name == 'halt':
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
@@ -1020,6 +1022,8 @@ class tree2asm:
         if name in self.dikt:
             addr = self.dikt[name]
         elif name in self.hdikt:
+            if name in self.bank_indep:
+                return ''
             addr = self.hdikt[name]
         else:
             return ''
@@ -1144,6 +1148,7 @@ class tree2asm:
             #        break
             #if not has_dollar:
                 bodys += '\tpagesel %s\n' % op1
+                self.instr += 2
             
         if op2 != None:
             bodys += '\t%s\t%s,\t%s' % (cmd, op1, op2)
@@ -1156,6 +1161,7 @@ class tree2asm:
         if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
             bodys += '\n\tpagesel $+1'
             self.instr += 2
+
 
         self.body += [bodys+comment+'\n']
 
