@@ -1,5 +1,6 @@
 #!/usr/bin/python
 ############################################################################
+# $Id$
 #
 # Description: Tree to assemler convertor. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
@@ -38,11 +39,12 @@
 #TODO:
 # * Check bank_sels
 # ? Change generation style ("return str" instead of "self.body += ...")
+# * ...
 
 import sys, os.path, compiler
 from tree2asm import tree2asm
 
-NFO='pyastra 0.1.0'
+NFO='pyastra 0.0.1'
 PROC='16f877'
 ICD = 1
 #
