@@ -200,7 +200,7 @@ main
                                 else:
                                     self._convert(AugAssign(n.expr, '&=', Invert(LeftShift((Const(1), i)))))
 ##                                        self._convert(If([(Subscript(Name('c'), 'OP_APPLY', [Name('d')]), Stmt([AugAssign(Name('a'), '|=', LeftShift((Const(1), Name('b')))), AugAssign(Name('a'), '&=', Invert(LeftShift((Const(1), Name('b')))))]))], None))
-                elif isinstance(node.expr, Subscript) and len(node.expr.subs) == 1 and isinstance(node.expr.subs, Const):
+                elif isinstance(node.expr, Subscript) and len(node.expr.subs) == 1 and isinstance(node.expr.subs[0], Const):
                     lbl_else=self.getLabel()
                     lbl_exit=self.getLabel()
 
