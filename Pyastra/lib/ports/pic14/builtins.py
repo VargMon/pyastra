@@ -30,10 +30,12 @@
 
 def lshift(lshift_left, lshift_right):
     asm("""
+        movf   _lshift_left,    w
 	movf	_lshift_right,	f
 	btfsc	STATUS,	Z
 	goto	lshift_label_end
 lshift_label_beg
+        bcf     STATUS, C
 	rlf	_lshift_left,	f
 	decfsz	_lshift_right,	f
 	goto	lshift_label_beg
@@ -43,10 +45,12 @@ lshift_label_end
 
 def rshift(rshift_left, rshift_right):
     asm("""
+        movf   _rshift_left,    w
 	movf	_rshift_right,	f
 	btfsc	STATUS,	Z
 	goto	rshift_label_end
 rshift_label_beg
+        bcf     STATUS, C
 	rrf	_rshift_left,	f
 	decfsz	_rshift_right,	f
 	goto	rshift_label_beg
