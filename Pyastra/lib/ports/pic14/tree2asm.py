@@ -147,10 +147,12 @@ class tree2asm:
         
         self._convert(node)
         
+        body_buf = ['\n\terrorlevel\t-302\n']
+
         if self.vectors:
-            body_buf=['\n\torg\t%s\n' % hex(self.vectors[0])]
+            body_buf += ['\n\torg\t%s\n' % hex(self.vectors[0])]
         else:
-            body_buf=['\n\torg\t0x0\n']
+            body_buf += ['\n\torg\t0x0\n']
         
         if self.ICD:
             body_buf += ['\tnop\n']
@@ -469,6 +471,7 @@ class tree2asm:
                 elif not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
                     self.say(err_mesg, exit_status=2)
                 else:
+                    self.app('\n\terrorlevel\t+302\n')
                     if len(node.args) > 2:
                         if not isinstance(node.args[2], Tuple):
                             self.say(err_mesg, exit_status=2)
@@ -482,6 +485,7 @@ class tree2asm:
                     self.instr += node.args[1].value
                     self.asm=1
                     self.last_bank = self.prelast_bank = self.curr_bank = -1
+                    self.app('\n\terrorlevel\t-302\n')
             elif node.node.name == 'halt':
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
