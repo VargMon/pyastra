@@ -1,3 +1,29 @@
+############################################################################
+# $Id$
+#
+# Description: PIC 16F877 default namespace. Pyastra project.
+# Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
+#    
+# Copyright (c) 2004 Alex Ziranov.  All rights reserved.
+#
+############################################################################
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+############################################################################
+
 hdikt={'RCIF': (0x5, 0), 'NOT_T1SYNC': (0x2, 0), 'BF': (0x0, 0),
 'RCIE': (0x5, 0), 'ACKSTAT': (0x6, 0), 'TMR1ON': (0x0, 0),
 'CKP': (0x4, 0), 'T2CON': (0x12, 0), 'RCEN': (0x3, 0),

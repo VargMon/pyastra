@@ -1,4 +1,7 @@
-************ PPyyaassttrraa RREEAADDMMEE ************
+==============
+Pyastra README
+==============
+
 To start use a command:
 python pyastra.py infile [outfile]
 Where infile is the python file you would like to compile. Outfile is the
