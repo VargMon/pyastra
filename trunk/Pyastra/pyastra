@@ -193,7 +193,7 @@ out.close()
 print "Peak RAM usage: %g byte(s) (%.1f%%)" % (p.ram_usage, p.ram_usage*100./p.max_ram)
 print "Program memory usage: %g word(s) (%.1f%%)" % (p.instr, p.instr*100./p.max_instr)
 if p.asm:
-    print "NOTE: statistics includes data specified in asm function!"
+    print "NOTE: statistics includes verbatim data specified in asm function!"
 if ICD:
     print "NOTE: statistics includes ICD memory usage!"
 

@@ -28,6 +28,7 @@
 # FIXME: check weather builtins return correct Z flag (for cases) or they don't
 #        12f509, 16c505, 16c57, 16f57 may not work because they may have not
 #        7-bit based addressing.
+# TODO:  set function's starting bank as the bank of its last argument.
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
@@ -37,8 +38,8 @@ class tree2asm:
     body=''
     stack=-1
     dikt={}
-    no_bank_cmds=('addlw', 'andlw', 'call', 'goto', 'iorlw', 'movlw', 'retlw',
-                  'sublw', 'xorlw')
+    bank_cmds=('addwf', 'andwf', 'bcf', 'bsf', 'btfsc', 'btfss', 'clrf', 'comf', 'decf', 'decfsz', 'incf', 'incfsz', 'iorwf', 'movf', 'movwf', 'rlf', 'rrf', 'subwf', 'swapf', 'xorwf')
+    no_bank_cmds=('addlw', 'andlw', 'call', 'clrw', 'clrwdt', 'goto', 'iorlw', 'movlw', 'nop', 'retfie', 'retlw', 'return', 'sleep', 'sublw', 'xorlw')
     lbl_stack=[]
     label=-1
     funcs={}
@@ -348,21 +349,65 @@ main
                 self.say('only functions are callable while')
 
             if node.node.name == 'asm':
-                if not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
-                    self.say('asm function has the following syntax: asm(code, instr_count [, (local_var1, local_var2, ...)])', exit_status=2)
+                err_mesg='asm function has the following syntax: asm(code [, instr_count [, (local_var1, local_var2, ...)]])'
+                if len(node.args) == 1 and isinstance(node.args[0], Const):
+                    self.app('\n; -- Parsed verbatim inclusion:\n', verbatim=1)
+                    for s in node.args[0].value.splitlines(1):
+                        #FIXME: bad tokenizing in case of "' '" or "','" as constants
+                        op=[]
+                        for op0 in s.split():
+                            for op1 in op0.split(','):
+                                if op1:
+                                    op += [op1]
+                        comment=''
+                        for wn in xrange(len(op)):
+                            if op[wn][0]==';':
+                                comment=s[s.find(op[wn]):]
+                                op=op[:wn]
+                                break
+                        if not op:
+                            self.app(comment, verbatim=1)
+                        elif len(op) > 3 or ((op[0] not in self.bank_cmds) and (op[0] not in self.no_bank_cmds)):
+                            if s[0].isspace():
+                                self.say('Can\'t parse line in asm function: %s' % s, level=self.warning)
+                                self.asm=1
+                                self.curr_bank=-1
+
+                            self.app(s, verbatim=1)
+                        else:
+                            op[0]=op[0].lower()
+                            if len(op) == 3:
+                                op[1]=op[1]
+                                
+                            if len(op) > 1 and (op[0] in self.bank_cmds or op[0] in self.no_bank_cmds) and op[0][-1] in 'fzcs':
+                                if op[1] not in self.hdikt and op[1] not in self.dikt:
+                                    op[1]=op[1]
+                                    self.malloc(op[1])
+
+                            comment=comment[1:]
+                            if len(op)==1:
+                                self.app(op[0], comment=comment)
+                            elif len(op)==2:
+                                self.app(op[0], op[1], comment=comment)
+                            else:
+                                self.app(op[0], op[1], op[2], comment=comment)
+                    self.app('\n; -- End of parsed verbatim inclusion\n', verbatim=1)
+                elif not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
+                    self.say(err_mesg, exit_status=2)
+                else:
+                    if len(node.args) > 2:
+                        if not isinstance(node.args[2], Tuple):
+                            self.say(err_mesg, exit_status=2)
+                        else:
+                            for i in node.args[2].nodes:
+                                if not isinstance(i, Const):
+                                    self.say('Local variables names must be constant strings.', exit_status=2)
+                                self.malloc(i.value, 1)
                     
-                if len(node.args) > 2:
-                    if not isinstance(node.args[2], Tuple):
-                        self.say('asm function has the following syntax: asm(code, instr_count [, (local_var1, local_var2, ...)])', exit_status=2)
-                    for i in node.args[2].nodes:
-                        if not isinstance(i, Const):
-                            self.say('Local variables names must be constant strings.', exit_status=2)
-                        self.malloc(i.value, 1)
-                    
-                self.app('; -- Verbatim inclusion:\n%s\n; -- End of verbatim inclusion\n' % node.args[0].value, verbatim=1)
-                self.instr += node.args[1].value
-                self.asm=1
-                self.curr_bank = -1
+                    self.app('\n; -- Verbatim inclusion:\n%s\n; -- End of verbatim inclusion\n' % node.args[0].value, verbatim=1)
+                    self.instr += node.args[1].value
+                    self.asm=1
+                    self.curr_bank = -1
             elif node.node.name == 'halt':
                 if len(node.args) != 0:
                     self.say('halt() function takes no arguments', exit_status=2)
@@ -561,9 +606,16 @@ main
             for a in node.argnames:
                 self.malloc('_'+a, 1)
                 
-            self.tbody=self.body
-            self.tinstr=self.instr
-            self.infunc=1
+            tbody=self.body
+            tinstr=self.instr
+            tcurr_bank=self.curr_bank
+            tlast_bank=self.last_bank
+            tprelast_bank=self.prelast_bank
+            
+            self.infunc = 1
+            self.curr_bank = -1
+            self.last_bank = -1
+            self.prelast_bank = -1
             self.body=['\n;\n; * Function %s *\n;\n' % node.name]
             self.instr=0
             self.app('func_%s\n' % node.name, verbatim=1)
@@ -578,9 +630,12 @@ main
             for lmn in self.body:
                 body_joined+=lmn
             self.funcs[node.name]=[node.argnames, body_joined, self.instr, used, self.head]
-            self.instr=self.tinstr
-            self.body=self.tbody
-            del self.tinstr, self.tbody
+            self.instr=tinstr
+            self.curr_bank=tcurr_bank
+            self.last_bank=tlast_bank
+            self.prelast_bank=tprelast_bank
+            self.body=tbody
+            del tinstr, tbody
 #       elif isinstance(node, Getattr):
 #       elif isinstance(node, Global):
         elif isinstance(node, If):
@@ -827,22 +882,41 @@ main
                 curr_block_has = 0
             
                 for sub in block:
-                    if sub[0] < addr < sub[1]:
+                    if sub[0] <= addr <= sub[1]:
                         addr_in_block = 1
                     
-                    if sub[0] < addr7 | (sub[0] >> 7 << 7) < sub[1]:
+                    if sub[0] <= (addr7 | (sub[0] >> 7 << 7)) <= sub[1]:
                         curr_block_has = 1
                 
-                if addr_in_block & curr_block_has:
+                if addr_in_block and curr_block_has:
                     return ''
+        else:
+            for block in self.shareb:
+                addr_in_block = 0
+                curr_block_has = 1
             
+                for sub in block:
+                    if sub[0] <= addr7 <= sub[1]:
+                        addr_in_block = 1
+                    
+                    if  not (sub[0] <= (addr7 | (sub[0] >> 7 << 7)) <= sub[1]):
+                        curr_block_has = 0
+                
+                if addr_in_block:
+                    if curr_block_has:
+                        return ''
+                    else:
+                        break
+            
+        if name=='TRISD':
+            print self.curr_bank
         if self.curr_bank==-1 or ((bank & 1) ^ (self.curr_bank & 1)):
             if bank & 1:
                 ret += '\tbsf\tSTATUS,\tRP0\n'
             else:
                 ret += '\tbcf\tSTATUS,\tRP0\n'
             self.instr += 1
-            
+           
         if self.curr_bank==-1 or (((bank & 2) ^ (self.curr_bank & 2))) and self.maxram > 0xff and 'RP1' in self.hdikt:
             if bank & 2:
                 ret += '\tbsf\tSTATUS,\tRP1\n'
@@ -860,7 +934,7 @@ main
         self.app('movf', 'var_test', 'f')
         self.del_last=1
         
-    def app(self, cmd='', op1=None, op2=None, verbatim=0):
+    def app(self, cmd='', op1=None, op2=None, verbatim=0, comment=''):
         if self.del_last:
             del self.body[-2:]
             self.del_last=0
@@ -868,7 +942,15 @@ main
             self.instr -= 1
 
         #FIXME: more intelligent verbatim code analyzing
-        if cmd=='call' or (verbatim and not (cmd=='' or cmd[0]==';')):
+        if verbatim:
+            for line in cmd.splitlines():
+                if line:
+                    s=line.split()
+                    if s and s[0] != ';':
+                        self.curr_bank = -1
+                        break
+                
+        if cmd=='call':
             self.curr_bank=-1
             
         if verbatim:
@@ -876,23 +958,22 @@ main
             return
 
         bodys=''
+        if comment:
+            comment='\t;%s' % comment
         if op1 and (cmd not in self.no_bank_cmds):
             bodys += self.bank_by_name(op1)
             
         if op2 != None:
-            bodys += '\t%s\t%s,\t%s\n' % (cmd, op1, op2)
+            bodys += '\t%s\t%s,\t%s' % (cmd, op1, op2)
         elif op1 != None:
-            bodys += '\t%s\t%s\n' % (cmd, op1)
+            bodys += '\t%s\t%s' % (cmd, op1)
         else:
-            bodys += '\t%s\n' % (cmd,)
+            bodys += '\t%s' % (cmd,)
         self.instr += 1
-        self.body += [bodys]
+        self.body += [bodys+comment+'\n']
 
         if self.instr == self.pages[0][1]:
             self.say('Program does not fit ROM (maybe because while only first ROM page is supported).')
             
     def get_asm(self):
-        body_joined=''
-        for lmn in self.body:
-            body_joined+=lmn
-        return self.head + body_joined + self.tail
+        return ''.join([self.head] + self.body + [self.tail])
