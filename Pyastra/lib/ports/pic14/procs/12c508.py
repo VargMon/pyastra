@@ -40,4 +40,6 @@ banks=((0x07, 0x1F), )
 
 shareb=(
 )
+
+vectors=None
 maxram = 0x1f
