@@ -82,7 +82,7 @@ for o, a in opts:
         sys.exit()
     if o=='--op-speed':
         op_speed = 1
-    elif o=='--idc':
+    elif o=='--icd':
         ICD = 1
     elif o=='-m':
         if a=='list':
