@@ -52,6 +52,9 @@ asm(code, instr_count [, (local_var1, local_var2, ...)])
     instructions and uses local variables |local_varN|
 halt()
     halt the system (iterates an infinite loop)
+sleep()
+    switch the system in sleep (power-down) mode (equivalent
+    to the assembler SLEEP command)
 fbin('0101 0101')
     converts binary number to decimal one. Separators (spaces) are
     enabled for user's convenience.
