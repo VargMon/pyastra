@@ -7,9 +7,21 @@
   <meta content="estyler@users.sourceforge.net" name="author">
 </head>
 <body>
+Supported microcontrollers and processors:<br>
+<ul>
+  <li>Microchip PIC16 family</li>
+  <ul>
+    <li>PIC16F877 - currently the most supported</li>
+    <li>with other PIC16 should also work well (with some limitations
+and incorrect relative statistics).<br>
+    </li>
+  </ul>
+</ul>
 All variables have unsigned byte type. There's no dynamical typing yet.
 There are no namespaces at this moment (all variables are global,
-including function arguments).<br>
+including function arguments). Also sleep mode and interrupts are not
+supported while. The limitation is that the final code shouldn't be
+larger than 2Kwords (some jumps may work incorrectly).<br>
 <br>
 Status of nodes currently supported by Pyastra:<br>
 <br>
@@ -504,5 +516,6 @@ Tested means that the statement generates correct code. Some
 combinations of tested statements may generate incorrect code anyway
 (than it's called a bug).<br>
 $Id$<br>
+<br>
 </body>
 </html>

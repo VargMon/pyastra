@@ -25,9 +25,9 @@
 ############################################################################
 
 
-import types, compiler, sys
+import types, compiler, sys, os.path, pyastra
 from compiler.ast import *
-from regs16f877 import *
+from pyastra.regs16f877 import *
 
 class tree2asm:
     head=''
@@ -418,7 +418,10 @@ class tree2asm:
             if node.names != [('*', None)]:
                 self.say('only "from <module_name> import *" input statement is supported while', node.lineno)
                 return
-            root=compiler.parseFile('%s.py' % node.modname)
+            name='%s.py' % node.modname
+            if not os.path.exists(name):
+                name=os.path.join(pyastra.__path__[0], name)
+            root=compiler.parseFile(name)
             if node.modname=='p16f877':
                 self.convert(root.node)
             else:
