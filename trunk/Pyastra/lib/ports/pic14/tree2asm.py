@@ -101,7 +101,7 @@ main
         self.tail=fbuf=''
         for i in self.funcs:
             if not self.funcs[i][1]:
-                print 'Undefined function call: %s' % i
+                self.say('Undefined function call: %s' % i)
             if self.funcs[i][3]:
                 ftest=1
                 fbuf = self.funcs[i][1]
@@ -332,10 +332,10 @@ main
                     
 ##      elif isinstance(node, Class):
         elif isinstance(node, Compare):
-            if len(node.expr.ops) != 1:
+            if len(node.ops) != 1:
                 self.say('Currently multiple comparisions are not supported', node.lineno)
             buf = self.push()
-            nodes=node.expr.ops
+            nodes=node.ops
             if nodes[0][0]=='<':
                 lbl_false=self.getLabel()
                 self._convert(node.expr)
