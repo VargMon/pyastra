@@ -638,7 +638,7 @@ class tree2asm:
         
     def getLabel(self):
         self.label += 1
-        return 'label%g' % self.label
+        return 'label%i' % self.label
             
     def malloc(self, name, care=0):
         if name not in self.dikt:
