@@ -47,4 +47,4 @@ banks=((0xC, 0x4F), )
 
 shareb=(
 )
-maxram = 0x3ff
+maxram = 0x89
