@@ -31,8 +31,7 @@
 # TODO:
 #   1. set function's starting bank as the bank of its last argument.
 #   2. add 'verbatim' argument to asm function
-#   3. save and resotre context in interrupt handler
-#   4. add support for interrupts for all processors that support
+#   3. add support for interrupts for all processors that support
 #      interrupts.
 #
 
@@ -625,9 +624,6 @@ class tree2asm:
             if cntr not in self.hdikt:
                 cntr = '_'+cntr
             self._convert(Assign([node.assign], node.list.args[0]))
-            limit = self.push()
-            self._convert(node.list.args[1])
-            self.app('movwf', limit)
             
             lbl_beg=self.getLabel()
             lbl_else=self.getLabel()
@@ -636,22 +632,46 @@ class tree2asm:
                 lbl_end=self.getLabel()
             else:
                 lbl_end=lbl_else
-            self.lbl_stack.append((lbl_cont, lbl_end))
-            self.app('\n%s' % lbl_beg, verbatim=1)
-            
-            self.app('movf', limit, 'w')
-            self.app('subwf', cntr, 'w')
-            self.app('btfsc', 'STATUS', 'Z')
-            self.app('goto', lbl_end)
-            self.app('btfsc', 'STATUS', 'C') #skip if cntr - limit <= 0
-            self.app('goto', lbl_else)
-            
-            self._convert(node.body)
-            
-            self.app('\n%s' % lbl_cont, verbatim=1)
-            
-            self.app('incf', cntr, 'f')
-            self.app('goto', lbl_beg)
+
+            self.lbl_stack += (lbl_cont, lbl_end)
+                
+            if isinstance(node.list.args[1], Const) and node.list.args[1].value==256:
+                #skip whole loop if cntr==255
+                self.app('movf', cntr, 'w')
+                self.app('sublw', '0xff')
+                self.app('btfsc', 'STATUS', 'Z')
+                self.app('goto', lbl_else)
+                
+                self.app('\n%s' % lbl_beg, verbatim=1)
+                
+                self._convert(node.body)
+                
+                self.app('\n%s' % lbl_cont, verbatim=1)
+                
+                self.app('incf', cntr, 'f')
+
+                self.app('movf', cntr, 'f')
+                self.app('btfss', 'STATUS', 'Z')
+                self.app('goto', lbl_beg)
+            else:
+                limit = self.push()
+                self._convert(Assign([AssName(limit, 'OP_ASSIGN')], node.list.args[1]))
+                
+                self.app('\n%s' % lbl_beg, verbatim=1)
+                
+                self.app('movf', limit, 'w')
+                self.app('subwf', cntr, 'w')
+                self.app('btfsc', 'STATUS', 'Z') #skip if cntr - limit != 0
+                self.app('goto', lbl_else)
+                self.app('btfsc', 'STATUS', 'C') #skip if cntr - limit  < 0
+                self.app('goto', lbl_else)
+                
+                self._convert(node.body)
+                
+                self.app('\n%s' % lbl_cont, verbatim=1)
+                
+                self.app('incf', cntr, 'f')
+                self.app('goto', lbl_beg)
             
             if node.else_ != None:
                 self.app('\n%s' % lbl_else, verbatim=1)
@@ -1109,14 +1129,14 @@ class tree2asm:
 
 ##        if self.ve:
 ##            print self.curr_bank, self.last_bank, self.prelast_bank
-        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+        #if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
             #has_dollar=0
             #for ch in op1:
             #    if ch=='$':
             #        has_dollar=1
             #        break
             #if not has_dollar:
-                bodys += '\tpagesel %s\n' % op1
+        #        bodys += '\tpagesel %s\n' % op1
             
         if op2 != None:
             bodys += '\t%s\t%s,\t%s' % (cmd, op1, op2)
@@ -1126,9 +1146,9 @@ class tree2asm:
             bodys += '\t%s' % (cmd,)
         self.instr += 1
         
-        if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
-            bodys += '\n\tpagesel $+1'
-            self.instr += 2
+        #if op1 and cmd=='call':#(cmd in self.pagesel_cmds):
+        #    bodys += '\n\tpagesel $+1'
+        #    self.instr += 2
 
         self.body += [bodys+comment+'\n']
 
