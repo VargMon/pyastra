@@ -27,7 +27,7 @@
 
 from distutils.core import setup
 import sys
-VERSION='0.0.3'
+VERSION='0.0.4'
 
 # patch distutils if it can't cope with the "classifiers" keyword
 if sys.version < '2.2.3':
