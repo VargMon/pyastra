@@ -633,7 +633,8 @@ class tree2asm:
         return name
         
     def pop(self):
-        self.stack -= 1
+        pass # this feature is temporary due to bugs it causes in some cases
+        #self.stack -= 1
         #self.free('stack%g' % self.stack)
         
     def getLabel(self):
