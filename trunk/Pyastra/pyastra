@@ -212,7 +212,7 @@ if ICD:
 
 print
 
-if not compile_only:
+if not compile_only and hasattr(os, 'access'):
     asm=asm_path=asm_args=None
 
     if os.environ.has_key('PATH'):

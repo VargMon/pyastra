@@ -31,9 +31,7 @@
 # TODO:
 #   1. set function's starting bank as the bank of its last argument.
 #   2. add 'verbatim' argument to asm function
-#   3. add support for interrupts for all processors that support
-#      interrupts.
-#   4. check whether all processor definition file are ok.
+#   3. check whether all processor definition file are ok.
 #
 
 import types, compiler, sys, os.path, pyastra.ports.pic14
