@@ -66,14 +66,13 @@ class tree2asm:
         self.procmod = __import__('pyastra.ports.pic14.procs.%s' %PROC, globals(), locals(), '*')
         self.hdikt = self.procmod.hdikt
         self.pages = self.procmod.pages
-        self.banks = self.procmod.banks
         self.shareb = self.procmod.shareb
         self.vectors = self.procmod.vectors
         self.maxram = self.procmod.maxram
         self.say = say
         
         self.max_ram=0
-        for i in self.banks:
+        for i in self.procmod.banks:
             self.max_ram += i[1] - i[0] + 1
         
         self.max_instr=0
@@ -91,9 +90,9 @@ class tree2asm:
         else:
             self.instr = 1
 
-        self.cvar=[self.banks[0][0]]
+        self.cvar=mem(self.procmod.banks)
         if self.ICD:
-            self.cvar[0] += 1
+            self.cvar[0].reserve_byte()
             self.instr += 1
             
         self._convert(From('builtins', [('*', None)]))
@@ -177,8 +176,8 @@ main
                     name='_'+node.name
                     self.malloc(name)
                 self.app('movwf', name)
-            elif node.flags=='OP_DELETE':
-                self.free('_'+node.name)
+#            elif node.flags=='OP_DELETE':
+#                self.free('_'+node.name)
             else:
                 self.say('%s flag is not supported while.' % node.flags, node.lineno)
 #       elif isinstance(node, AssTuple):
@@ -871,33 +870,26 @@ main
     
     def malloc(self, name, care=0):
         if name not in self.dikt:
-            self.dikt[name]=self.cvar[0]
+            try:
+                addr=self.cvar.reserve_byte()
+            except:
+                self.say("program does not fit RAM.", level=self.warning)
+                return
+            
+            self.dikt[name]=addr
             if len(self.dikt) > self.ram_usage:
                 self.ram_usage=len(self.dikt)
                 
-            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(self.cvar[0]), self.cvar[0] >> 7)
-
-            if len(self.cvar) > 1:
-                del self.cvar[0]
-            else:
-                self.cvar[0] += 1
-                for i in self.banks:
-                    if i[0] <= self.cvar[0] <= i[1]:
-                        break
-                    elif i[0] > self.cvar[0]:
-                        self.cvar[0]=i[0]
-                        break
-                if self.cvar[0] > self.banks[-1][1]:
-                    self.say("program does not fit RAM.", level=self.warning)
+            self.head += '%s\tequ\t%s\t;bank %g\n' % (name, hex(addr), addr >> 7)
         elif care:
             self.say("name %s is defined twice!" % name, level=self.warning)
 
-    def free(self, name, care=1):
-        if name in self.dikt:
-            self.cvar.insert(0, self.dikt[name])
-            del self.dikt[name]
-        elif care:
-            self.say("variable %s can't be deleted before assign!" % name, level=self.warning)
+#    def free(self, name, care=1):
+#        if name in self.dikt:
+#            self.cvar.insert(0, self.dikt[name])
+#            del self.dikt[name]
+#        elif care:
+#            self.say("variable %s can't be deleted before assign!" % name, level=self.warning)
 
     def bank_by_name(self, name):
         if name in self.dikt:
@@ -1014,3 +1006,24 @@ main
             
     def get_asm(self):
         return ''.join([self.head] + self.body + [self.tail])
+
+class mem:
+    mmap={}
+    
+    def __init__(self, banks):
+        for bank in banks:
+            for addr in xrange(bank[0], bank[1]+1):
+                self.mmap[addr] = 1
+                
+    def reserve_byte(self):
+        if not len(self.mmap):
+            raise 'Program does not fit the RAM!'
+        
+        k=self.mmap.keys()
+        k.sort()
+        addr=k[0]
+        del self.mmap[k[0]]
+        return addr
+    
+    def free_byte(self, addr):
+        self.mmap[addr] = 1
