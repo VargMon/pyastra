@@ -1,3 +1,6 @@
+Pyastra needs python installed. Python 2.3 recommend.
+
 To install Pyastra simply run the following command under root user:
 
 python setup.py install
+
