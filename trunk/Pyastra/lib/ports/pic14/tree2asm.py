@@ -369,7 +369,9 @@ main
                 self.app('movwf', buf)
                 self._convert(nodes[0][1])
                 self.app('subwf', buf, 'w')
-                self.app('comf', buf, 'w')
+                self.app('movf', 'STATUS', 'w')
+                self.app('xorlw', '1 << Z')
+                self.app('movwf', 'STATUS')
             elif nodes[0][0]=='<=':
                 lbl_true=self.getLabel()
                 self._convert(node.expr)
