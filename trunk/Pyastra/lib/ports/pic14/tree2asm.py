@@ -261,40 +261,46 @@ main
         elif isinstance(node, AugAssign):
                 if not isinstance(node.node, Name):
                     self.say('assign only to a variable is not supported while.', node.lineno)
+
+                name=node.node.name
+                if '_'+name in self.dikt:
+                    name = '_'+name
+                elif name not in self.hdikt:
+                    self.say('variable %s not initialized' % name, node.lineno)
                     
                 if node.op == '+=':
                     self._convert(node.expr)
-                    self.app('addwf', node.node.name, 'f')
+                    self.app('addwf', name, 'f')
                 elif node.op == '-=':
                     self._convert(node.expr)
-                    self.app('subwf', node.node.name, 'f')
+                    self.app('subwf', name, 'f')
                 elif node.op == '*=':
                     self._convert(Mul((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '/=':
                     self._convert(Div((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '%=':
                     self._convert(Mod((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '**=':
                     self._convert(Power((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '>>=':
                     self._convert(RightShift((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '<<=':
                     self._convert(LeftShift((node.node, node.expr)))
-                    self.app('movwf', node.node.name, 'f')
+                    self.app('movwf', name, 'f')
                 elif node.op == '&=':
                     self._convert(node.expr)
-                    self.app('andwf', node.node.name, 'f')
+                    self.app('andwf', name, 'f')
                 elif node.op == '^=':
                     self._convert(node.expr)
-                    self.app('xorwf', node.node.name, 'f')
+                    self.app('xorwf', name, 'f')
                 elif node.op == '|=':
                     self._convert(node.expr)
-                    self.app('iorwf', node.node.name, 'f')
+                    self.app('iorwf', name, 'f')
                 else:
                     self.say('augmented assign %s is not supported while.' % node.op, node.lineno)
                     
@@ -830,13 +836,15 @@ main
     
     def test(self):
         self.app('movwf', 'var_test')
+        self.app('movf', 'var_test', 'f')
         self.del_last=1
         
     def app(self, cmd='', op1=None, op2=None, verbatim=0):
         if self.del_last:
-            del self.body[-1]
+            del self.body[-2:]
             self.del_last=0
             self.curr_bank=self.last_bank
+            self.instr -= 1
 
         #FIXME: more intelligent verbatim code analyzing
         if cmd=='call' or (verbatim and not (cmd=='' or cmd[0]==';')):
