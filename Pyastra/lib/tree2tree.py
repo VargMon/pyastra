@@ -24,7 +24,7 @@
 #
 ############################################################################
 
-import os.path, compiler
+import os.path, compiler, pyastra.ports.pic14
 from compiler.ast import *
 
 class tree2tree:
