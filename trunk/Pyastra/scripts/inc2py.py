@@ -61,8 +61,11 @@ HEADER="""######################################################################
 """
 
 whites=(' ', '\t')
+maxram=0
 
 def main():
+    global maxram
+    
     if len(sys.argv) < 3:
         print 'usage:\ninc2py.py dir proc1 [proc2 [...]]'
         sys.exit(4)
@@ -81,6 +84,7 @@ def main():
             names=[proc_name_,]
             
         for proc_name in names:
+            maxram=0
             in_name=os.path.join(diry, 'header', 'p%s.inc' % proc_name_)
             in2_name=os.path.join(diry, 'lkr', '%s.lkr' % proc_name)
             out_name='%s.py' % proc_name
@@ -95,12 +99,15 @@ def main():
             lkr2py(inp, out, proc_name)
             inp.close()
             
+            out.write('maxram = %s' % hex(maxram))
+            
             out.close()
             proclist += "'%s', " % proc_name
         
     print "Added processors:\n%s" % proclist[:-2]
 
 def inc2py(inp, out, proc_name):
+    global maxram
     out.write(HEADER % proc_name.upper())
     ch=1
     ignore=0
@@ -116,6 +123,8 @@ def inc2py(inp, out, proc_name):
                 a=int(buf[2][2:-1], 16)
                 if b not in buf:
                     b[buf[0]]= "%s" % (hex(a), )
+                    if a>maxram:
+                        maxram=a
                     
             ignore=0
             buf=['', '', '']
@@ -166,6 +175,7 @@ def inc2py(inp, out, proc_name):
     out.write('}\n')
     
 def lkr2py(inp, out, proc_name):
+    global maxram
     ch=1
     ignore=0
     buf=['', '', '', '', '']
@@ -187,15 +197,21 @@ def lkr2py(inp, out, proc_name):
                 if buf[0]=='CODEPAGE':
                     if buf[4]!='PROTECTED':
                         pages.append((buf[2][6:], buf[3][4:]))
+                        if eval(buf[3][4:]) > maxram:
+                            maxram=eval(buf[3][4:])
                 elif buf[0]=='DATABANK':
                     if buf[4]!='PROTECTED':
                         banks.append((buf[2][6:], buf[3][4:]))
+                        if eval(buf[3][4:]) > maxram:
+                            maxram=eval(buf[3][4:])
                 elif buf[0]=='SHAREBANK':
                     if buf[4]!='PROTECTED':
                         grp=buf[1][5:]
                         if grp not in shareb:
                             shareb[grp]=[]
                         shareb[grp].append((buf[2][6:], buf[3][4:]))
+                        if eval(buf[3][4:]) > maxram:
+                            maxram=eval(buf[3][4:])
                 elif buf[0] not in ('LIBPATH', 'SECTION'):
                     print 'WARNING: unsupported keyword: %s' % buf[0]
             
@@ -220,12 +236,14 @@ def lkr2py(inp, out, proc_name):
         for j in shareb[i]:
             for k in banks:
                 if j[0]==k[0] and j[1]==k[1]:
-                    new=0
+                    new -= 1
                 elif eval(k[0]) <= eval(j[0]) <= eval(k[1]) or eval(k[0]) <= eval(j[1]) <= eval(k[1]):
                     print "FIXME: proc %s: some of shared banks are subsequences of banks or vice versa" % proc_name
                     break
-        if new:
+        if new == 1:
             banks.append(shareb[i][0])
+        elif new < 0:
+            print "FIXME: proc %s: some of shared banks are multiply representet in banks." % proc_name
 
     cmp0 = lambda x,y: cmp(eval(x[0]), eval(y[0]))
     

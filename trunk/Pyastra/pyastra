@@ -138,7 +138,7 @@ http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
             print """%s processor is not supported by the current version.
 (Have you selected a correct port?)
 Please submit feature request if that processor is not already in TODO:
-http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
+http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse""" % a
             sys.exit(4)
 
 if not args:
