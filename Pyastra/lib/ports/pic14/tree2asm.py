@@ -44,6 +44,7 @@ class tree2asm:
     stack=-1
     dikt={}
     bank_cmds=('addwf', 'andwf', 'bcf', 'bsf', 'btfsc', 'btfss', 'clrf', 'comf', 'decf', 'decfsz', 'incf', 'incfsz', 'iorwf', 'movf', 'movwf', 'rlf', 'rrf', 'subwf', 'swapf', 'xorwf')
+    cond_br_cmds=('btfsc', 'btfss', 'decfsz', 'incfsz')
     pagesel_cmds=('call', 'goto')
     no_bank_cmds=('addlw', 'andlw', 'call', 'clrw', 'clrwdt', 'goto', 'iorlw', 'movlw', 'nop', 'retfie', 'retlw', 'return', 'sleep', 'sublw', 'xorlw')
     bank_indep=('STATUS', 'FSR', 'PCLATH', 'INTCON', 'PCL')
@@ -433,6 +434,7 @@ class tree2asm:
                 err_mesg='asm function has the following syntax: asm(code [, instr_count [, (local_var1, local_var2, ...)]])'
                 if len(node.args) == 1 and isinstance(node.args[0], Const):
                     self.app('\n; -- Parsed verbatim inclusion:\n', verbatim=1)
+                    prev_op=''
                     for s in node.args[0].value.splitlines(1):
                         #FIXME: bad tokenizing in case of "' '" or "','" as constants
                         op=[]
@@ -466,12 +468,39 @@ class tree2asm:
                                     self.malloc(op[1])
 
                             comment=comment[1:]
+                            t_instr=self.instr
                             if len(op)==1:
                                 self.app(op[0], comment=comment)
                             elif len(op)==2:
                                 self.app(op[0], op[1], comment=comment)
                             else:
                                 self.app(op[0], op[1], op[2], comment=comment)
+
+                            if self.instr - t_instr > 1 and prev_op in self.cond_br_cmds:
+                                last=self.body[-1]
+                                del self.body[-1]
+                                lbl_exit=self.getLabel()
+
+                                if prev_op=='btfsc':
+                                    s=self.body[-1]
+                                    self.body[-1]=s[:s.find(prev_op)]+'btfss'+s[s.find(prev_op)+5:]
+                                    self.app('goto', lbl_exit)
+                                elif prev_op=='btfss':
+                                    s=self.body[-1]
+                                    self.body[-1]=s[:s.find(prev_op)]+'btfsc'+s[s.find(prev_op)+5:]
+                                    self.app('goto', lbl_exit)
+                                else:
+                                    lbl_if=self.getLabel()
+                                    self.app('goto', lbl_if)
+                                    self.app('goto', lbl_exit)
+                                    
+                                    self.app(lbl_if, verbatim=1)
+
+                                self.body += [last]
+                                self.app(lbl_exit, verbatim=1)
+                                
+                        if op:
+                            prev_op=op[0]
                     self.app('\n; -- End of parsed verbatim inclusion\n', verbatim=1)
                 elif not (2 <= len(node.args) <= 3 and isinstance(node.args[0], Const) and isinstance(node.args[1], Const)):
                     self.say(err_mesg, exit_status=2)
