@@ -42,7 +42,7 @@ from pyastra.ports.pic14.tree2asm import tree2asm
 from pyastra.tree2tree import tree2tree
 #from getopt import getopt
 
-NFO='pyastra 0.0.2'
+NFO='pyastra 0.0.3'
 ports=('pic14',)
 ICD = 0
 #
