@@ -683,12 +683,16 @@ main
                 else:
                     name='_'+name
                     self.malloc(name)
-                if not isinstance(node.subs[0], Const):
-                    self.say('Only constant indices are supported while.', node.lineno)
-                else:
+                if isinstance(node.subs[0], Const):
                     self.app('movlw', '.0')
                     self.app('btfsc', name, str(node.subs[0].value))
                     self.app('movlw', '.1')
+                elif isinstance(node.subs[0], Name) and node.subs[0].name in self.hdikt:
+                    self.app('movlw', '.0')
+                    self.app('btfsc', name, node.subs[0].name)
+                    self.app('movlw', '.1')
+                else:
+                    self.say('Only constant indices are supported while.', node.lineno)
 #       elif isinstance(node, TryExcept):
 #       elif isinstance(node, TryFinally):
 #       elif isinstance(node, Tuple):
