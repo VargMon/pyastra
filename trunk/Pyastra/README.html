@@ -9,9 +9,9 @@
 <body>
 <h1>Pyastra README</h1>
 To start use a command:<br>
-<pre>pyastra [options] infile [outfile]</pre>
-Where infile is the python file you would like to compile. Outfile is
-the assembler output file. If no outfile is given, then the name would
+<pre>pyastra [options] infile</pre>
+Where infile is the python file you would like to compile. If no
+outfile is given, then the name would
 be selected automatically (e.g. test.py -&gt; test.asm)<br>
 <br>
 Options are:<br>
@@ -58,6 +58,23 @@ default)</td>
       <td style="vertical-align: top;">--op-speed</td>
       <td style="vertical-align: top;">Optimize for speed (for code
 size by default)</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-S<br>
+      </td>
+      <td style="vertical-align: top;">--compile<br>
+      </td>
+      <td style="vertical-align: top;">Compile only, don't assemble or
+link.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">-o<br>
+      </td>
+      <td style="vertical-align: top;">--output<br>
+      </td>
+      <td style="vertical-align: top;">Alternate name of output file.<br>
+      </td>
     </tr>
     <tr>
       <td style="vertical-align: top;">-h</td>
