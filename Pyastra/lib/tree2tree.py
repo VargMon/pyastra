@@ -24,32 +24,35 @@
 #
 ############################################################################
 
-##from compiler.ast import *
-##from pyastra.ports.pic14.16f877 import *
+import os.path, compiler
+from compiler.ast import *
 
 class tree2tree:
-##    consts={}
-##    nconsts=[]
-##    global hdikt
     
     def __init__(self, root):
         self.root=root
-##        self.findConsts(self.root)
-##        del self.nconsts
-##        self.replaceAll(self.root)
-##        
-##    def findConsts(self, node):
-##        if node==None:
-##            return
-##        elif isinstance(node, AssName):
-##            if node.name in hdikt or node.name in self.nconsts:
-##                return
-##            if node.flags=='OP_ASSIGN':
-##                if node.name in self.consts:
-##                    self.nconsts.append(node.name)
-##                    del self.consts[node.name]
-##                else:
-##                    
-##                
-##    def replaceAll(self, node):
-##        print self.consts
+        self.root.interrupts_on=0
+        self.scan(self.root)
+        print self.root.interrupts_on
+
+    def scan(self, node):
+        if isinstance(node, list):
+            for n in node:
+                self.scan(n)
+        elif isinstance(node, From):
+            name='%s.py' % node.modname
+            if not os.path.exists(name):
+                name=os.path.join(pyastra.ports.pic14.__path__[0], name)
+            root=compiler.parseFile(name)
+            self.scan(root)
+        elif isinstance(node, Function):
+            if node.name == 'on_interrupt':
+                self.root.interrupts_on=1
+                return
+        elif isinstance(node, Module):
+            self.scan(node.node)
+        elif isinstance(node, Stmt):
+            self.scan(node.nodes)
+        else:
+            return
+        

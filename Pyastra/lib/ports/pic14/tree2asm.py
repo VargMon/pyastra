@@ -101,29 +101,30 @@ class tree2asm:
         self.asm=0
         
         addrs=None
-        for part in self.shareb:
-            #Check that part is not SFR
-            in_bank = 0
-            for bank in self.procmod.banks:
-                if bank[0] <= part[0][0] <= bank[1]:
-                    in_bank = 1
-                    break
-                
-            if not in_bank or part[0][1]-part[0][0]+1 < 4:
-                continue
+        if node.interrupts_on:
+            for part in self.shareb:
+                #Check that part is not SFR
+                in_bank = 0
+                for bank in self.procmod.banks:
+                    if bank[0] <= part[0][0] <= bank[1]:
+                        in_bank = 1
+                        break
+                    
+                if not in_bank or part[0][1]-part[0][0]+1 < 4:
+                    continue
 
-            in_banks_until = -1
-            for sub in part:
-                if sub[0] >> 7 == in_banks_until + 1:
-                    in_banks_until += 1
-                else:
-                    break
+                in_banks_until = -1
+                for sub in part:
+                    if sub[0] >> 7 == in_banks_until + 1:
+                        in_banks_until += 1
+                    else:
+                        break
 
-            if in_banks_until == self.maxram >> 7:
-                addrs=[]
-                for i in xrange(0, 4):
-                    addrs += [part[0][0] + i]
-                break
+                if in_banks_until == self.maxram >> 7:
+                    addrs=[]
+                    for i in xrange(0, 4):
+                        addrs += [part[0][0] + i]
+                    break
         if addrs:
             self.malloc('var_test', addr=addrs[0])
             self.malloc('var_w_temp', addr=addrs[1])
