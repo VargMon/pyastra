@@ -92,7 +92,7 @@ div_cont
 	goto	div_beg
 	
 	movf	div_res,	w
-""", 15, ('div_cntr','div_buf',))
+""", 15, ('div_cntr','div_buf','div_res'))
 
 def mod(mod_left, mod_right):
     asm("""
