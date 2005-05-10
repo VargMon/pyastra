@@ -379,12 +379,16 @@ def add32(add32_left3, add32_left2, add32_left1, add32_left0, add32_right3, add3
 
         movf    _add32_left1,  w
         addwf   _add32_right1, w
+        btfsc   STATUS, C
+        incf    _add32_res2, f
         addwf   _add32_res1,   f
         btfsc   STATUS, C
         incf    _add32_res2, f
 
         movf    _add32_left2,  w
         addwf   _add32_right2, w
+        btfsc   STATUS, C
+        incf    _add32_res2, f
         addwf   _add32_res2,   f
         btfsc   STATUS, C
         incf    _add32_res3, f
