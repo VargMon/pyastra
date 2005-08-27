@@ -24,76 +24,89 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 ############################################################################
+"""Pyastra command-line front-end"""
+import sys, os.path, getopt, pyastralib
 
-#Exit codes:
-# 0 - ok
-# 1 - unsupported feature request
-# 2 - syntax error
-# 3 - hardware limitations error
-# 4 - arguments error
-#
-#Built-in functions:
-# asm - include verbatim asm text
-# halt - halt the system
-#
+def select(variants):
+    """Asks the user to select one of the variants"""
+    print '\nPlease choose:'
+    for i, v in map(None, xrange(1, len(variants)+1), variants):
+        print '%i: %s' % (i, str(v))
+    c=-1
+    while not (0 < c < len(variants)+1):
+        c=raw_input()
+        try:
+            c=int(c)
+        except ValueError:
+            pass
 
-import sys, os, os.path, compiler, getopt, pyastra.ports.pic14.procs
-from pyastra.ports.pic14.tree2asm import tree2asm
-from pyastra.tree2tree import tree2tree
-#from getopt import getopt
+    return variants[c-1]
 
-NFO='pyastra 0.0.4'
-ports=('pic14',)
-ICD = 0
-ASSEMBLERS=(('gpasm', ''), ('mpasm.exe', ''), ('mpasmwin.exe', ''),)
-#
-# By default optimizes for size,
-# but if op_speed=1 than optimizes for speed.
-# 
-op_speed = 0
-compile_only = 0
-
-errors=0
-warnings=0
-messages=0
-
+def say(message, level, line):
+    """Displays errors, warnings and messages"""
+    outstr=''
+    if level != pyastralib.MESSAGE:
+        outstr += '%s: ' % ('', 'WARNING', 'ERROR')[level]
+        
+    if line is not None:
+        outstr += 'line %i: ' % line
+        
+    outstr='%s%s' % (outstr, message)
+    if level < pyastralib.ERROR:
+        print outstr
+    else:
+        sys.stderr.write(outstr+'\n')
 
 def usage():
+    """Displays the usage message"""
     print """%s usage:
-pyastra [options] infile
+pyastra_c.py [options] infile
 
-Options:
-  -m              Set the port to use (default: -m%s)
-  -mlist          List available ports
-  -p              Select port specific processor (default: -m%s -p%s)
-  -plist          List supported port specific processors
-      --icd       Enable ICD support (disabled by default)
-      --op-speed  Optimize for speed (for code size by default)
-  -S  --compile   Compile only, don't assemble or link.    
-  -o  --output    Alternate name of output file.
-  -h, --help      Show this usage message and exit
-""" % (NFO, ports[0], ports[0], procs_clean[0], )
-    sys.exit(4)
+General options:
+  -m               Set the port to use
+  -mlist           List available ports and exit
+  -p               Select port specific processor
+  -plist           List supported port specific processors and exit
+  -S  --compile    Compile only, don't assemble
+  -o  --output     Alternate name of output file
+  -h  --help       Show this usage message and exit
+      --debug      Show debug information
+""" % (pyastralib.version, )
+    fopts_s=''
+    global fopts
+    for fname in fopts.keys():
+        optlist=fopts[fname]
+        fopts_s += (' * %s:\n' % fname)
+        for opt in optlist:
+            skey=''
+            lkey=''
+            if opt.skey:
+                skey='-%s' % opt.skey
+                
+            if opt.lkey:
+                lkey='--%s' % opt.lkey
+                
+            fopts_s += '  %-3s %-12s %s\n' % (skey, lkey, opt.descr)
 
-def say(message, line=None, level=tree2asm.error, exit_status=0):
-    global errors, warnings, messages
-    
-    if line is not None:
-        print '%s: %g: %s' % (level, line, message)
-    else:
-        print '%s: %s' % (level, message)
+    if fopts_s:
+        print 'Filter-specific options:'
+        print fopts_s
 
-    if exit_status:
-        sys.exit(exit_status)
-        
-    if level==tree2asm.error:
-        errors += 1
-    elif level==tree2asm.warning:
-        warnings += 1
-    else:
-        messages += 1
-            
+def wrong_port(port):
+    """Informs the user that he has selecten a non-existent port"""
+    print """Port %s is not supported by the current version!
+Please submit feature request if that port is not already in TODO:
+http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse
+""" % port
+    available_ports()
 
+def available_ports():
+    """Lists available ports to user"""
+    print 'Available ports: %s' % str(pyastralib.get_ports())
+
+# Print the current version to ease maintenance
+print 'Welcome to %s!' % pyastralib.version
+# Warn users about the developement status of Pyastra
 print """
 WARNING: This is a preview release! It may (but i hope it doesn\'t) generate incorrect code.
 
@@ -104,138 +117,146 @@ If you have found a bug, you are welcome to submit one:
 http://sourceforge.net/tracker/?group_id=106265&atid=643744
 
 -------
+
 """
 
-procs=pyastra.ports.pic14.procs.__all__
-procs_clean = filter(lambda item: item[-1]!='i', procs)
-PROC=procs_clean[0]
+# Prepare some variables
 out_name=None
+trg_t=['asm_op', 'bin']
 
+# Create option indices
+fopts = pyastralib.get_options()
+opts = pyastralib.crt_options()
+options='o:hp:m:S'
+long_options=['output=', 'help', 'compile', 'debug']
+sopts_p={}
+lopts_p=[]
+
+for fopt in fopts.values():
+    for opt in fopt:
+        long_options+=[opt.lkey]
+        
+        lopts_p+=['--'+opt.lkey]
+        if opt.skey:
+            sopts_p['-'+opt.skey]=opt.lkey
+            
+        if opt.arg:
+            long_options[-1]+='='
+            
+            if opt.skey:
+                options+=opt.skey
+                options+=':'
+
+# Parse options
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'o:hm:p:S', ['output=', 'help', 'icd', 'op-speed', 'compile',])
+    aopts, args = getopt.getopt(sys.argv[1:], options, long_options)
 except getopt.GetoptError:
     usage()
+    sys.exit(4)
 
-for o, a in opts:
-    if o in ('-h', '--help'):
+# Module options have the highest priority
+for o, a in aopts:
+    if o in lopts_p:
+        if a:
+            opts[o[2:]]=a
+        else:
+            opts[o[2:]]=True
+    elif o in sopts_p:
+        if a:
+            opts[o[1:]]=a
+        else:
+            opts[o[1:]]=True
+    elif o in ('-h', '--help'):
         usage()
         sys.exit()
-    if o=='--op-speed':
-        op_speed = 1
     elif o in ('-S', '--compile'):
-        compile_only=1
+        trg_t=['asm_op']
     elif o in ('-o', '--output'):
         out_name=os.path.splitext(a)[0]
-    elif o=='--icd':
-        ICD = 1
+##    elif o=='--icd':
+##        opts['icd'] = True
     elif o=='-m':
         if a=='list':
-            print 'Available ports: %s' % str(ports)
+            available_ports()
             sys.exit(0)
-        elif a!='pic14':
-            print """Curent version supports pic14 (Microchip PIC16*) only.
-Please submit feature request if that port is not already in TODO:
-http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse"""
+        elif a not in pyastralib.get_ports():
+            wrong_port(a)
             sys.exit(4)
+        else:
+            opts['port']=a
+             
     elif o=='-p':
         if a=='list':
-            print '%i supported %s-port specific processors:\n%s' % (len(procs_clean), ports[0], str(procs_clean))
+            port=None
+            for opt, arg in aopts:
+                if opt=='-m':
+                    port=arg
+                    if port not in pyastralib.get_ports():
+                        wrong_port(port)
+                        sys.exit(4)
+                    break
+                    
+            if not port:
+                port=pyastralib.get_ports()[0]
+                
+            procs=pyastralib.get_procs(port)
+            print '%i supported %s-port specific processors:\n%s' % (len(procs), port, str(procs))
             sys.exit(0)
-        elif a in procs_clean:
-            PROC=a
         else:
-            print """%s processor is not supported by the current version.
-(Have you selected a correct port?)
+            opts['proc']=a
+    elif o=='--debug':
+        opts['debug']=True
+
+# Exit if there's no infile among arguments
+if not args:
+    usage()
+    sys.exit(4)
+
+# Check whether the given processor name exists in current port
+if opts.has_key('proc'):
+    if opts.has_key('port'):
+        if not opts['proc'] in pyastralib.get_procs[opts['port']]:
+            print """Processor %s is not supported by the current version.
+Have you selected a correct port?
 Please submit feature request if that processor is not already in TODO:
 http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse""" % a
             sys.exit(4)
-
-if not args:
-    usage()
-
-root=compiler.parseFile(args[0])
+            
+# Prepare some variables
+opts['infile']=args[0]
 
 if not out_name:
     out_name=os.path.splitext(args[0])[0]
 
-if ICD:
-    if PROC + 'i' not in procs:
-        print 'Seems like microcontroller %s doesn\'t support ICD.' % PROC
-        sys.exit(4)
-    else:
-        print "Compiling from %s to %s for processor %s (port %s)..." % (
-              args[0], out_name+'.asm', PROC, 'pic14')
-        PROC += 'i'
+# Convert it!
+c=pyastralib.Converter(args[0], select, say, trg_t, opts=opts, src_t='file')
+results=c.convert()
 
-op=tree2tree(root, say)
-p=tree2asm(ICD, op_speed, PROC, say)
-p.convert(op.root)
-
-pstr = 'Compiler has found'
-ptest = 0
-if errors:
-    pstr += ' %g errors' % errors
-if warnings:
-    if ptest:
+# Display errors, warnings and messages count.
+pstr = ''
+if c.errors:
+    pstr += ' %g error' % c.errors
+    if c.errors > 1:
+        pstr+='s'
+if c.warnings:
+    if pstr:
         pstr +=','
-    pstr += '%g warnings' % warnings
-if messages:
-    if ptest:
+    pstr += '%g warning' % c.warnings
+    if c.warnings > 1:
+        pstr+='s'
+if c.messages:
+    if pstr:
         pstr +=','
-    pstr += '%g messages' % messages
+    pstr += ' %g message' % c.messages
+    if c.messages > 1:
+        pstr+='s'
 
-if ptest:
-    print pstr+'.'
-
-if errors:
-    print 'No asm code generated.'
-    sys.exit(1)
-
-out=open(out_name+'.asm', 'w')
-
-out.write(""";
-; Generated by %s
-; infile: %s
-;
-""" % (NFO, args[0],))
-
-out.write(p.get_asm())
-
-out.close()
-
-print "Peak RAM usage: %g byte(s) (%.1f%%)" % (p.ram_usage, p.ram_usage*100./p.max_ram)
-print "Program memory usage: %g word(s) (%.1f%%)" % (p.instr, p.instr*100./p.max_instr)
-if p.asm:
-    print "NOTE: statistics includes verbatim data specified in asm function!"
-if ICD:
-    print "NOTE: statistics includes ICD memory usage!"
-
-print
-
-if not compile_only and hasattr(os, 'access'):
-    asm=asm_path=asm_args=None
-
-    if os.environ.has_key('PATH'):
-        paths=os.environ['PATH']
-    else:
-        paths=defpath
-        
-    for path in paths.split(os.pathsep):
-        for fn, args in ASSEMBLERS:
-            if os.access(os.path.join(path, fn), os.X_OK):
-                asm_path = os.path.join(path, fn)
-                asm = fn
-                asm_args = args
-                break
-
-        if asm_path:
-            break
-
-    if asm_path:
-        print 'Assembling %s with %s...' % (out_name+'.asm', asm,)
-        print '"%s" %s %s' % (asm_path, out_name+'.asm', asm_args)
-        os.system('"%s" %s %s' % (asm_path, out_name+'.asm', asm_args))
-    else:
-        print 'No assembler found. Supported assemblers are: %s' % (ASSEMBLERS, )
-
+if pstr:
     print
+    print 'Total:'+pstr+'.'
+
+# Save the output of the filters
+for r in results:
+    f=file('%s.%s' % (out_name, r.ext), 'w')
+    f.write(r.data)
+    f.close()

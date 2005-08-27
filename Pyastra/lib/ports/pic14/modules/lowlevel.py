@@ -1,7 +1,7 @@
 ############################################################################
 # $Id$
 #
-# Description: pic14 port. Pyastra project.
+# Description: Lowlevel routines for pic14 port. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
@@ -23,5 +23,16 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 ############################################################################
+"Lowlevel routines"
 
-__all__ = ['builtins', 'procs']
+def halt():
+    asm("""
+        goto $
+    """)
+
+def sleep():
+    asm("""
+        sleep
+        nop
+    """)
+

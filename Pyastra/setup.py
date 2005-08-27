@@ -27,7 +27,7 @@
 
 from distutils.core import setup
 import sys
-VERSION='0.0.4'
+VERSION='0.0.5-prerelease'
 
 # patch distutils if it can't cope with the "classifiers" keyword
 if sys.version < '2.2.3':
@@ -41,7 +41,8 @@ setup(name='Pyastra',
       author_email='estyler@users.sourceforge.net',
       url='http://pyastra.sourceforge.net/',
       package_dir = {'pyastra': 'lib'},
-      packages=['pyastra', 'pyastra.ports', 'pyastra.ports.pic14', 'pyastra.ports.pic14.procs'],
+      packages=['pyastra', 'pyastra.ports', 'pyastra.ports.pic14', 'pyastra.ports.pic14.modules', 'pyastra.ports.pic14.procs', 'pyastra.filters', 'pyastra.modules'],
+      py_modules=['pyastralib'],
       scripts=['pyastra'],
       data_files=[('share/doc/pyastra-%s' % VERSION, ['doc/STATUS.html', 'doc/TODO.html', 'LICENSE', 'doc/HACKING.html']),
                   ('share/doc/pyastra-%s/scripts' % VERSION, ['scripts/inc2py.py', ]),
