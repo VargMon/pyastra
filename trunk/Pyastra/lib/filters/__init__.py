@@ -1,10 +1,10 @@
 ############################################################################
 # $Id$
 #
-# Description: pic14 port. Pyastra project.
+# Description: Pyastra filters. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
-# Copyright (c) 2004 Alex Ziranov.  All rights reserved.
+# Copyright (c) 2005 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
 #
@@ -23,5 +23,5 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 ############################################################################
-
-__all__ = ['builtins', 'procs']
+__all__=['asm2asm_op_dummy', 'py2tree', 'tree2tree_op_dummy',
+         'tree_op2asm', 'asm_op2bin', 'file2py']

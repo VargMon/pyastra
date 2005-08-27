@@ -1,10 +1,10 @@
 ############################################################################
 # $Id$
 #
-# Description: pic14 port. Pyastra project.
+# Description: Dummy assembler "optimizer". Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
-# Copyright (c) 2004 Alex Ziranov.  All rights reserved.
+# Copyright (c) 2005 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
 #
@@ -23,5 +23,19 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 ############################################################################
+converts_from='asm'
+converts_to='asm_op'
 
-__all__ = ['builtins', 'procs']
+def get_ports():
+    return []
+
+def get_procs(port):
+    return []
+
+class Filter:
+    modified=1
+    ext='asm'
+    meta={}
+    
+    def __init__(self, src, opts):
+        self.data = src
