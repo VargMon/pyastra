@@ -7,29 +7,40 @@
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#
-############################################################################
+"""
+Pic14 specific built-ins. U{Pyastra project <http://pyastra.sourceforge.net>}.
 
-#
-# TODO
-# Bank selection before variable usage
-#
+This module contains built-in functions and is imported automatically
+during compilation. Usually are written in assembler.
+
+@author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
+@copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
+@license: This program is free software; you can redistribute it and/or
+          modify it under the terms of the GNU General Public License as
+          published by the Free Software Foundation; either version 2 of
+          the License, or (at your option) any later version.
+          
+          This program is distributed in the hope that it will be useful,
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
+          MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+          GNU Library General Public License for more details.
+          
+          You should have received a copy of the GNU General Public
+          License along with this program; if not, write to the Free
+          Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+          MA 02111-1307, USA.
+@contact: U{http://pyastra.sourceforge.net}
+@todo: Bank selection before variable usage
+"""
 
 def lshift(lshift_left, lshift_right):
+    """
+    Does the left shift (C{<<}) operation. Puts the result in the C{W}
+    register.
+
+    @param lshift_left: Left operand.
+    @param lshift_right: Right operand.
+    """
     asm("""
         movf   _lshift_left,    w
 	movf	_lshift_right,	f
@@ -45,6 +56,13 @@ lshift_label_end
 """)
 
 def rshift(rshift_left, rshift_right):
+    """
+    Does the right shift (C{>>}) operation. Puts the result in the C{W}
+    register.
+
+    @param rshift_left: Left operand.
+    @param rshift_right: Right operand.
+    """
     asm("""
         movf   _rshift_left,    w
 	movf	_rshift_right,	f
@@ -60,6 +78,12 @@ rshift_label_end
 """)
 
 def mul(mul_left, mul_right):
+    """
+    Multiplies opearands and puts the result in the C{W} register.
+
+    @param mul_left: Left multiplier.
+    @param mul_right: Right multiplier.
+    """
     asm("""
 	clrf	mul_res
 	movlw	.8
@@ -76,6 +100,12 @@ mul_beg
 """)
 
 def div(div_left, div_right):
+    """
+    Diviedes opearands and puts the quotient in the C{W} register.
+
+    @param div_left: Dividend.
+    @param div_right: Divisor.
+    """
     asm("""
 	clrf	div_buf
 	movlw	.8
@@ -100,6 +130,12 @@ div_cont
 """)
 
 def mod(mod_left, mod_right):
+    """
+    Diviedes opearands and puts the reminder in the C{W} register.
+
+    @param mod_left: Dividend.
+    @param mod_right: Divisor.
+    """
     asm("""
 	clrf	mod_buf
 	movlw	.8
@@ -122,6 +158,12 @@ mod_cont
 """)
 
 def power(pow_left, pow_right):
+    """
+    Raises the base to the exponent and puts the result to the C{W} register.
+
+    @param pow_left: Base.
+    @param pow_right: Exponent.
+    """
     asm("""
     	movf	_pow_right,	f
 	btfss	STATUS,	C
