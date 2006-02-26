@@ -2,33 +2,58 @@
 ############################################################################
 # $Id$
 #
-# Description: Console front-end. Pyastra project.
+# Description: Command-line front-end. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#
-############################################################################
-"""Pyastra command-line front-end"""
-import sys, os.path, getopt, pyastralib
+"""
+Pyastra command-line front-end.
+U{Pyastra project <http://pyastra.sourceforge.net>}.
+
+Usage
+=====
+  pyastra_c.py [options] infile
+  
+  General options:
+    -m               Set the port to use
+    -mlist           List available ports and exit
+    -p               Select port specific processor
+    -plist           List supported port specific processors and exit
+    -S  --compile    Compile only, don't assemble
+    -o  --output     Alternate name of output file
+    -h  --help       Show this usage message and exit
+        --debug      Show debug information
+
+@author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
+@copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
+@license: This program is free software; you can redistribute it and/or
+          modify it under the terms of the GNU General Public License as
+          published by the Free Software Foundation; either version 2 of
+          the License, or (at your option) any later version.
+          
+          This program is distributed in the hope that it will be useful,
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
+          MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+          GNU Library General Public License for more details.
+          
+          You should have received a copy of the GNU General Public
+          License along with this program; if not, write to the Free
+          Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+          MA 02111-1307, USA.
+@contact: U{http://pyastra.sourceforge.net}
+@see: L{convertors}
+"""
+
+import sys, os.path, getopt, pyastra
+from pprint import pformat
 
 def select(variants):
-    """Asks the user to select one of the variants"""
+    """
+    Asks the user to select one of the variants
+    @see pyastra.Pyastra
+    """
     print '\nPlease choose:'
     for i, v in map(None, xrange(1, len(variants)+1), variants):
         print '%i: %s' % (i, str(v))
@@ -43,16 +68,19 @@ def select(variants):
     return variants[c-1]
 
 def say(message, level, line):
-    """Displays errors, warnings and messages"""
+    """
+    Displays errors, warnings and messages.
+    @see pyastra.Pyastra
+    """
     outstr=''
-    if level != pyastralib.MESSAGE:
+    if level != pyastra.MESSAGE:
         outstr += '%s: ' % ('', 'WARNING', 'ERROR')[level]
         
     if line is not None:
         outstr += 'line %i: ' % line
         
     outstr='%s%s' % (outstr, message)
-    if level < pyastralib.ERROR:
+    if level < pyastra.ERROR:
         print outstr
     else:
         sys.stderr.write(outstr+'\n')
@@ -71,7 +99,7 @@ General options:
   -o  --output     Alternate name of output file
   -h  --help       Show this usage message and exit
       --debug      Show debug information
-""" % (pyastralib.version, )
+""" % (pyastra.version, )
     fopts_s=''
     global fopts
     for fname in fopts.keys():
@@ -89,11 +117,15 @@ General options:
             fopts_s += '  %-3s %-12s %s\n' % (skey, lkey, opt.descr)
 
     if fopts_s:
-        print 'Filter-specific options:'
+        print 'Convertor-specific options:'
         print fopts_s
 
 def wrong_port(port):
-    """Informs the user that he has selecten a non-existent port"""
+    """
+    Informs the user that he has selecten a non-existent port.
+    @param port: Specified port name.
+    @type  port: C{str}
+    """
     print """Port %s is not supported by the current version!
 Please submit feature request if that port is not already in TODO:
 http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse
@@ -101,11 +133,28 @@ http://sourceforge.net/tracker/?atid=643747&group_id=106265&func=browse
     available_ports()
 
 def available_ports():
-    """Lists available ports to user"""
-    print 'Available ports: %s' % str(pyastralib.get_ports())
+    """Lists available ports to standard output."""
+    print 'Available ports: %s' % str(pyastra.get_ports())
 
+def available_procs(port, procs):
+    print '%i supported %s-port specific processors:' % (len(procs), port)
+    width = 0
+    for p in procs:
+        width = max(len(p), width)
+        
+    cols_in_string = max(1, 79/(width+1))
+    col = 0
+    buf = ''
+    for p in procs:
+        buf += '%-*s ' % (width, p)
+        col += 1
+        if col == cols_in_string:
+            print buf[:-1]
+            col = 0
+            buf = ''
+    
 # Print the current version to ease maintenance
-print 'Welcome to %s!' % pyastralib.version
+print 'Welcome to %s!' % pyastra.version
 # Warn users about the developement status of Pyastra
 print """
 WARNING: This is a preview release! It may (but i hope it doesn\'t) generate incorrect code.
@@ -125,8 +174,8 @@ out_name=None
 trg_t=['asm_op', 'bin']
 
 # Create option indices
-fopts = pyastralib.get_options()
-opts = pyastralib.crt_options()
+fopts = pyastra.get_options()
+opts = pyastra.crt_options()
 options='o:hp:m:S'
 long_options=['output=', 'help', 'compile', 'debug']
 sopts_p={}
@@ -179,7 +228,7 @@ for o, a in aopts:
         if a=='list':
             available_ports()
             sys.exit(0)
-        elif a not in pyastralib.get_ports():
+        elif a not in pyastra.get_ports():
             wrong_port(a)
             sys.exit(4)
         else:
@@ -191,16 +240,16 @@ for o, a in aopts:
             for opt, arg in aopts:
                 if opt=='-m':
                     port=arg
-                    if port not in pyastralib.get_ports():
+                    if port not in pyastra.get_ports():
                         wrong_port(port)
                         sys.exit(4)
                     break
                     
             if not port:
-                port=pyastralib.get_ports()[0]
+                port=pyastra.get_ports()[0]
                 
-            procs=pyastralib.get_procs(port)
-            print '%i supported %s-port specific processors:\n%s' % (len(procs), port, str(procs))
+            procs=pyastra.get_procs(port)
+            available_procs(port, procs)
             sys.exit(0)
         else:
             opts['proc']=a
@@ -215,7 +264,7 @@ if not args:
 # Check whether the given processor name exists in current port
 if opts.has_key('proc'):
     if opts.has_key('port'):
-        if not opts['proc'] in pyastralib.get_procs[opts['port']]:
+        if not opts['proc'] in pyastra.get_procs[opts['port']]:
             print """Processor %s is not supported by the current version.
 Have you selected a correct port?
 Please submit feature request if that processor is not already in TODO:
@@ -229,7 +278,7 @@ if not out_name:
     out_name=os.path.splitext(args[0])[0]
 
 # Convert it!
-c=pyastralib.Converter(args[0], select, say, trg_t, opts=opts, src_t='file')
+c=pyastra.Pyastra(args[0], select, say, trg_t, opts=opts, src_t='file')
 results=c.convert()
 
 # Display errors, warnings and messages count.
@@ -241,7 +290,7 @@ if c.errors:
 if c.warnings:
     if pstr:
         pstr +=','
-    pstr += '%g warning' % c.warnings
+    pstr += ' %g warning' % c.warnings
     if c.warnings > 1:
         pstr+='s'
 if c.messages:
@@ -255,7 +304,7 @@ if pstr:
     print
     print 'Total:'+pstr+'.'
 
-# Save the output of the filters
+# Save the output of the convertors
 for r in results:
     f=file('%s.%s' % (out_name, r.ext), 'w')
     f.write(r.data)

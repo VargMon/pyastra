@@ -8,22 +8,28 @@
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#
-############################################################################
+"""
+Setup script. U{Pyastra project <http://pyastra.sourceforge.net>}.
+
+@author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
+@copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
+@license: This program is free software; you can redistribute it and/or
+          modify it under the terms of the GNU General Public License as
+          published by the Free Software Foundation; either version 2 of
+          the License, or (at your option) any later version.
+          
+          This program is distributed in the hope that it will be useful,
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
+          MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+          GNU Library General Public License for more details.
+          
+          You should have received a copy of the GNU General Public
+          License along with this program; if not, write to the Free
+          Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+          MA 02111-1307, USA.
+@contact: U{http://pyastra.sourceforge.net}
+@todo: Compile documentation if epydoc is available.
+"""
 
 from distutils.core import setup
 import sys
@@ -41,8 +47,7 @@ setup(name='Pyastra',
       author_email='estyler@users.sourceforge.net',
       url='http://pyastra.sourceforge.net/',
       package_dir = {'pyastra': 'lib'},
-      packages=['pyastra', 'pyastra.ports', 'pyastra.ports.pic14', 'pyastra.ports.pic14.modules', 'pyastra.ports.pic14.procs', 'pyastra.filters', 'pyastra.modules'],
-      py_modules=['pyastralib'],
+      packages=['pyastra', 'pyastra.ports', 'pyastra.ports.pic14', 'pyastra.ports.pic14.modules', 'pyastra.ports.pic14.procs', 'pyastra.convertors', 'pyastra.modules'],
       scripts=['pyastra'],
       data_files=[('share/doc/pyastra-%s' % VERSION, ['doc/STATUS.html', 'doc/TODO.html', 'LICENSE', 'NEWS', 'doc/HACKING.html']),
                   ('share/doc/pyastra-%s/scripts' % VERSION, ['scripts/inc2py.py', ]),
