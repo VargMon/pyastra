@@ -61,7 +61,7 @@ class Convertor:
     meta={}
 
     def __init__(self, src, opts):
-        say=opts['convertor'].say
+        say=opts['pyastra'].say
         self.modified=False
         infile=opts.get('infile')
         if infile:

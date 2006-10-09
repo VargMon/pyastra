@@ -63,9 +63,10 @@ class Convertor:
     
     def __init__(self, root, opts):
         self.opts=opts
-        self.say=self.opts['convertor'].say
+        self.say=self.opts['pyastra'].say
         self.data=self.scan(compiler.parse(root))
         self.data.interrupts_on=self.interrupts_on
+        self.data.src = root
 
     def scan(self, node, namespace=''):
         """
@@ -113,6 +114,8 @@ class Convertor:
         elif isinstance(node, Module):
             m=Module(node.doc, self.scan(node.node, namespace))
             m.namespace=namespace
+            if hasattr(node, 'src'):
+                m.src = node.src
             return m
         elif isinstance(node, Stmt):
             return Stmt(self.scan(node.nodes, namespace))

@@ -244,7 +244,7 @@ class Pyastra:
             if not opts:
                 opts = crt_options()
             opts['caller_select']=select
-            opts['convertor']=self
+            opts['pyastra']=self
             self.caller_say=say
             opts.setdefault('debug', False)
             self.src=src
