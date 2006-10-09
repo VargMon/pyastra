@@ -1,0 +1,2 @@
+Warn if some user asm variable isn't started with '_'.
+Write how much memory the program needs even if it doesn't fit the RAM.

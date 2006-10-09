@@ -82,4 +82,4 @@ Suffix "_op" for data types means "optimized".
 """
 
 __all__=['asm2asm_op_dummy', 'py2tree', 'tree2tree_op_dummy',
-         'tree_op2asm', 'asm_op2bin', 'file2py']
+         'tree_op2ol', 'ol2asm', 'asm_op2bin', 'file2py']
