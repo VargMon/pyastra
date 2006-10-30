@@ -59,8 +59,6 @@ Currently the following C{src} and C{data} types are known:
   - B{bin}  - data is a string with binary data (usually the latest
     compilation stage).
     
-Suffix "_op" for data types means "optimized".
-
 @see: L{pyastra}
 @author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
 @copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
@@ -81,5 +79,5 @@ Suffix "_op" for data types means "optimized".
 @contact: U{http://pyastra.sourceforge.net}
 """
 
-__all__=['asm2asm_op_dummy', 'py2tree', 'tree2tree_op_dummy',
-         'tree_op2ol', 'ol2asm', 'asm_op2bin', 'file2py']
+__all__=['py2tree', 'tree2ol', 'ol2asm', 'ol2asm16',
+         'asm2bin', 'file2py']

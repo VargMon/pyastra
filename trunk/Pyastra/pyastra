@@ -14,7 +14,7 @@ U{Pyastra project <http://pyastra.sourceforge.net>}.
 
 Usage
 =====
-  pyastra_c.py [options] infile
+  pyastra [options] infile
   
   General options:
     -m               Set the port to use
@@ -88,7 +88,7 @@ def say(message, level, line):
 def usage():
     """Displays the usage message"""
     print """%s usage:
-pyastra_c.py [options] infile
+pyastra [options] infile
 
 General options:
   -m               Set the port to use
@@ -171,7 +171,7 @@ http://sourceforge.net/tracker/?group_id=106265&atid=643744
 
 # Prepare some variables
 out_name=None
-trg_t=['asm_op', 'bin']
+trg_t=['asm', 'bin']
 
 # Create option indices
 fopts = pyastra.get_options()
@@ -219,7 +219,7 @@ for o, a in aopts:
         usage()
         sys.exit()
     elif o in ('-S', '--compile'):
-        trg_t=['asm_op']
+        trg_t=['asm']
     elif o in ('-o', '--output'):
         out_name=os.path.splitext(a)[0]
 ##    elif o=='--icd':

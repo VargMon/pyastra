@@ -1,7 +1,7 @@
 ############################################################################
-# $Id$
+# $Id: ol2asm.py 114 2006-10-09 12:33:13Z estyler $
 #
-# Description: pic14 assembler objects list to assembler convertor.
+# Description: pic16 assembler objects list to assembler convertor.
 #              Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
@@ -9,7 +9,7 @@
 #
 ############################################################################
 """
-Pic14 assembler objects list to assembler convertor.
+Pic16 assembler objects list to assembler convertor.
 U{Pyastra project <http://pyastra.sourceforge.net>}.
 
 @author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
@@ -39,7 +39,7 @@ import pyastra
 from tree2ol import AsmObject, Label
 
 converts_from = 'ol'
-converts_to = 'asm'
+converts_to = 'asm16'
 
 def get_ports():
     """@return: A list of supported ports."""
@@ -56,7 +56,6 @@ class Convertor:
     """
     modified = False
     meta = {}
-    ext = "asm"
     
     def __init__(self, src, opts):
         mem = src[0].uvars

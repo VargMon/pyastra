@@ -1,15 +1,17 @@
 ############################################################################
-# $Id$
+# $Id: __init__.py 112 2006-02-26 03:42:22Z estyler $
 #
-# Description: Dummy tree "optimizer". Pyastra project.
+# Description: pic16 port-specific modules. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
-# Copyright (c) 2004 Alex Ziranov.  All rights reserved.
+# Copyright (c) 2005 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
 """
-Dummy tree "optimizer".
-U{Pyastra project <http://pyastra.sourceforge.net>}.
+Pic16 port-specific modules. U{Pyastra project
+<http://pyastra.sourceforge.net>}.
+
+All port-independent modules are stored in the L{pyastra.modules} package.
 
 @author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
 @copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
@@ -28,27 +30,6 @@ U{Pyastra project <http://pyastra.sourceforge.net>}.
           Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
           MA 02111-1307, USA.
 @contact: U{http://pyastra.sourceforge.net}
-@see: L{convertors}
 """
 
-converts_from='tree'
-converts_to='tree_op'
-
-def get_ports():
-    """@return: A list of supported ports."""
-    return []
-
-def get_procs(port):
-    """@return: A list of supported processors."""
-    return []
-
-class Convertor:
-    """
-    Main convertor class
-    @see: L{convertors}
-    """
-    modified=True
-    meta={}
-    
-    def __init__(self, src, opts):
-        self.data = src
+__all__ = ['lowlevel']
