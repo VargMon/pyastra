@@ -70,7 +70,7 @@ from compiler.ast import *
 import types, compiler, sys, os.path, pyastra.ports.pic14, pyastra.ports.pic14.procs, pyastra
 from pyastra import Option, MESSAGE, WARNING, ERROR
 
-converts_from='tree_op'
+converts_from='tree'
 converts_to='ol'
 PORTS=['pic14']
 
@@ -251,7 +251,7 @@ class Convertor:
         # Import builtins
         name=os.path.join(pyastra.ports.pic14.__path__[0], 'builtins.py')
         c = pyastra.Pyastra(name, self.opts['caller_select'], self.say,
-                trg_t = ['tree_op'], opts = self.opts.copy(), src_t = 'file')
+                trg_t = ['tree'], opts = self.opts.copy(), src_t = 'file')
         root=c.convert()[0].data
         self._convert(root)
 

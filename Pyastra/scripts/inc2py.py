@@ -33,6 +33,7 @@ Converts C{inc} and C{lkr} files to Pyastra processor definitions.
 @contact: U{http://pyastra.sourceforge.net}
 @see: L{convertors}
 @todo: Shared banks should be added to databanks too (if they aren't already).
+@todo: Adapt script to work with pic16 port too.
 """
 
 #
@@ -166,7 +167,10 @@ def inc2py(inp, out, proc_name):
         ch=inp.read(1)
         if ch=='\n' or not ch:
             if (not ignore) and buf[1]=='EQU' and buf[0][0] != '_' and not (buf[0] in ('F', 'W')):
-                a=int(buf[2][2:-1], 16)
+                if buf[2][:2] == "H'" and buf[2][-1] == "'":
+                    a=int(buf[2][2:-1], 16)
+                else:
+                    a=int(buf[2])
                 if b not in buf:
                     b[buf[0]]= "%s" % (hex(a), )
                     if a>maxram:
@@ -255,7 +259,7 @@ def lkr2py(inp, out, proc_name):
                         pages.append((buf[2][6:], buf[3][4:]))
                     elif buf[1]=='NAME=vectors':
                         vectors=(buf[2][6:], buf[3][4:])
-                elif buf[0]=='DATABANK':
+                elif buf[0]=='DATABANK' or buf[0] == 'ACCESSBANK':
                     if buf[4]!='PROTECTED':
                         banks.append((buf[2][6:], buf[3][4:]))
                         if eval(buf[3][4:]) > maxram:

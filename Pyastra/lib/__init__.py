@@ -83,7 +83,8 @@ __all__ = ['ports', 'modules', 'convertors']
 from pyastra import convertors
 
 
-version='pyastra 0.0.5-prerelease'
+revision='$Revision$'[11:-2]
+version='pyastra 0.0.5-prerelease (rev %s)' % revision
 MESSAGE=0
 WARNING=1
 ERROR=2

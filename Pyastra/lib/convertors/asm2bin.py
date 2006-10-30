@@ -36,7 +36,7 @@ The result of assembly is saved in C{data} variable.
 
 import os, os.path, pyastra
 
-converts_from='asm_op'
+converts_from='asm'
 converts_to='bin'
 
 def get_ports():

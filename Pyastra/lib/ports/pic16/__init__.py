@@ -1,21 +1,15 @@
 ############################################################################
-# $Id$
+# $Id: __init__.py 112 2006-02-26 03:42:22Z estyler $
 #
-# Description: port modules. Pyastra project.
+# Description: pic16 port. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
 # Copyright (c) 2004 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
+
 """
-Pyastra ports. U{Pyastra project <http://pyastra.sourceforge.net>}.
-
-This package contains packages of ports. You should list a port in the
-C{__all__} dictionary to enable it. Pyastra is shipped with all official
-ports enabled. Every port must be in its own package.
-
-B{Note:} at the moment Pyastra isn't multi-target compiler. Thus it
-supports only L{pic14} port.
+Pic16 port. U{Pyastra project <http://pyastra.sourceforge.net>}.
 
 @author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
 @copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
@@ -36,4 +30,4 @@ supports only L{pic14} port.
 @contact: U{http://pyastra.sourceforge.net}
 """
 
-__all__ = ['pic14', 'pic16']
+__all__ = ['builtins', 'procs', 'modules']

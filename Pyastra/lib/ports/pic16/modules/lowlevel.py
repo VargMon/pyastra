@@ -1,15 +1,18 @@
 ############################################################################
-# $Id$
+# $Id: lowlevel.py 112 2006-02-26 03:42:22Z estyler $
 #
-# Description: Dummy assembler "optimizer". Pyastra project.
+# Description: Lowlevel routines for pic16 port. Pyastra project.
 # Author: Alex Ziranov <estyler _at_ users _dot_ sourceforge _dot_ net>
 #    
-# Copyright (c) 2005 Alex Ziranov.  All rights reserved.
+# Copyright (c) 2004 Alex Ziranov.  All rights reserved.
 #
 ############################################################################
 """
-Dummy assembler "optimizer".
-U{Pyastra project <http://pyastra.sourceforge.net>}.
+Lowlevel routines for pic16 port.  U{Pyastra project
+<http://pyastra.sourceforge.net>}.
+
+This module contains lowlevel functions that can be excluded from the
+convertor. Is B{not} imported by default.
 
 @author: U{Alex Ziranov <mailto:estyler_at_users_dot_sourceforge_dot_net>}
 @copyright: (C) 2004-2006 Alex Ziranov.  All rights reserved.
@@ -28,28 +31,23 @@ U{Pyastra project <http://pyastra.sourceforge.net>}.
           Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
           MA 02111-1307, USA.
 @contact: U{http://pyastra.sourceforge.net}
-@see: L{convertors}
 """
 
-converts_from='asm'
-converts_to='asm_op'
-
-def get_ports():
-    """@return: A list of supported ports."""
-    return []
-
-def get_procs(port):
-    """@return: A list of supported processors."""
-    return []
-
-class Convertor:
+def halt():
     """
-    Main convertor class
-    @see: L{convertors}
+    Function halts the microcontroller till the reset. (It does an
+    eternal loop.)
     """
-    modified=True
-    ext='asm'
-    meta={}
-    
-    def __init__(self, src, opts):
-        self.data = src
+    asm("""
+        bra $
+    """)
+
+def sleep():
+    """
+    Turns microcontroller into the sleep mode.
+    """
+    asm("""
+        sleep
+        nop
+    """)
+
