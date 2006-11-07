@@ -51,3 +51,10 @@ def sleep():
         nop
     """)
 
+def reset():
+    """
+    Software device reset
+    """
+    asm("""
+        reset
+    """)
