@@ -78,7 +78,7 @@ Architecture
 @todo: Test the library.
 """
 
-__all__ = ['ports', 'modules', 'convertors']
+__all__ = ['ports', 'modules', 'convertors', 'basic_tree2ol']
 
 from pyastra import convertors
 
