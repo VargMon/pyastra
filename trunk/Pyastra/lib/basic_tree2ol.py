@@ -615,6 +615,16 @@ class BasicTreeConvertor:
                     
                 self._convert(Const(val))
                 return
+            elif node.node.name == 'pragma_varaddr':
+                if (len(node.args) != 2
+                        or not isinstance(node.args[0], Const)
+                        or not isinstance(node.args[0].value, str)
+                        or not isinstance(node.args[1], Const)
+                        or not isinstance(node.args[1].value, int)):
+                    self.say('pragrma_varaddr(name, addr) function takes exactly two arguments: variable name and its address.', ERROR)
+                    return
+                self.get_var(node.args[0].value).set_addr(node.args[1].value)
+                return
             else:
                 func_name=node.node.name
         elif isinstance(node.node, Getattr):
@@ -624,7 +634,7 @@ class BasicTreeConvertor:
             return
         
         if func_name not in self.funcs:
-            self.say('function %s is not defined before call (this is not supported while)' % func_name, self.lineno(node), ERROR)
+            self.say('function %s is not defined before call (this is not supported while)' % func_name, ERROR, self.lineno(node))
             return
         else:
             self.funcs[func_name].add_caller(self.curr_func)
@@ -1445,3 +1455,12 @@ class Variable:
                 return
         
         return self.addr
+    
+    def set_addr(self, addr):
+        if self.addr != None:
+            self.mmap.free_byte(addr)
+
+        try:
+            self.addr = self.mmap.reserve_byte(addr)
+        except:
+            self.say('Address can\'t be allocated: %i' % addr, ERROR)
