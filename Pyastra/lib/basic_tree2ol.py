@@ -940,7 +940,12 @@ class BasicTreeConvertor:
         self.line_to = line_to
 
     def conv_name(self, node):
-        self.ll_movf(self.get_var(node), 'w')
+        if node.name == 'True':
+            self._convert(Const(1))
+        elif node.name == 'False':
+            self._convert(Const(0))
+        else:
+            self.ll_movf(self.get_var(node), 'w')
 
     def conv_not(self, node):
         lbl1=Label('not_set_true')
